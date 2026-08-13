@@ -1,0 +1,1918 @@
+<!doctype html>
+<html lang="en">
+<!--
+  ════════════════════════════════════════════════════════════════
+  THE JOURNEY - personal site (Himalayas → Kathmandu → Toronto)
+  ════════════════════════════════════════════════════════════════
+  HOW TO EDIT (humans + AI models):
+
+  1. CONFIG (top of the main <script>) is the SINGLE SOURCE OF
+     TRUTH: all text, nav, photos, about content, globe cities,
+     asset paths and scene palettes. Look for ✏️ EDIT markers.
+     Never duplicate copy in HTML - injected fields are empty tags.
+
+  2. ASSETS: every path in CONFIG can be a remote URL or a local
+     /assets/... file. Remote URLs shipped here are TEMPORARY CC0/
+     public-domain placeholders - self-host them later. Every image
+     has a graceful fallback chain (alt URL → generated art), and
+     GSAP/Lenis/Three.js failures degrade to a readable static page.
+
+  3. CHAPTERS: each journey beat has its own storytelling device
+     (hero rig, photo window, pinned zoom, horizontal pan, globe).
+     Chapter text lives in CONFIG.chapters (label + lead + passage);
+     the markup slots are data-ch-lead / data-ch-passage. To add a
+     plain section (Projects, Resume…): copy a window chapter block,
+     give it an id, add ONE entry to CONFIG.nav + CONFIG.sceneMap.
+
+  4. SCENES: the fixed background (WebGL clouds on desktop, CSS
+     gradient on mobile/low-power) is graded by scroll through
+     CONFIG.scenes + CONFIG.sceneMap. Each scene also sets cloud
+     CHARACTER: wisp (1 thin cirrus … 0 big billows) and stars (0..1
+     star field - the globe band is real space). Chapter boundaries
+     get automatic palette-tinted "cloud gate" decks you descend
+     through (see GATES in the script); <div class="breath"> spacers
+     between chapters give the descent its pacing.
+
+  5. HERO: CONFIG.heroLayers = dimensional parallax rig (photo peak,
+     cloud planes, foreground ridge, live snow) that tilts toward the
+     cursor. Give each layer a src to use your own transparent PNGs;
+     leave src:"" for the built-in generated layers. type:"cloud"
+     = soft plane, type:"ridge" = smooth dark silhouette.
+  ════════════════════════════════════════════════════════════════
+-->
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<!-- ✏️ EDIT meta (also mirrored in CONFIG.meta for JS use) -->
+<title>The Journey, Himalayas to Toronto | Personal Site</title>
+<meta name="description" content="A cinematic scroll story and personal site: from the Himalayas to Kathmandu to Toronto. Student, builder, photographer." />
+<meta name="theme-color" content="#3a5a73" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='8' y='8' width='16' height='16' fill='none' stroke='%23eef4f6' stroke-width='2' transform='rotate(45 16 16)'/%3E%3C/svg%3E" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="The Journey, Himalayas to Toronto" />
+<meta property="og:description" content="A cinematic scroll story and personal site: mountains, temples, flight, and a new skyline." />
+<meta property="og:image" content="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=70" />
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --steel:#35638a;--steel-2:#5b83a4;--steel-soft:#86a5be;
+  --fog:#eef4f6;--fog-70:rgba(238,244,246,.78);--fog-50:rgba(238,244,246,.55);
+  --line-w:rgba(255,255,255,.35);
+  --gutter:clamp(1.4rem,6vw,7rem);
+  --font:"Jost","Century Gothic",Futura,system-ui,sans-serif;
+  --ease:cubic-bezier(.55,.08,.14,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html.lenis,html.lenis body{height:auto}
+.lenis.lenis-smooth{scroll-behavior:auto!important}
+body{background:#5b7183;color:var(--fog);font-family:var(--font);font-weight:300;
+  font-size:clamp(15px,1.1vw,18px);line-height:1.9;letter-spacing:.02em;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden}
+::selection{background:var(--steel);color:#fff}
+a{color:inherit;text-decoration:none}
+img,svg,canvas{display:block;max-width:100%}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;letter-spacing:inherit}
+:focus-visible{outline:2px solid #fff;outline-offset:3px;border-radius:2px}
+[id]{scroll-margin-top:76px}
+
+/* ---------- fixed atmosphere ---------- */
+.sky,.dust{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.dust{z-index:1}
+/* cloud-gate layer: decks you pass through at chapter boundaries - sits OVER content */
+.gates{position:fixed;inset:0;width:100%;height:100%;z-index:3;pointer-events:none}
+.atmosphere{position:fixed;inset:0;z-index:4;pointer-events:none;overflow:hidden;mix-blend-mode:screen}
+.atmosphere img{position:absolute;width:132%;left:-16%;height:auto;will-change:transform}
+.sky-fallback{position:fixed;inset:0;z-index:0;pointer-events:none;display:none;
+  background:linear-gradient(180deg,#8fa3ad,#4c6273 55%,#41586a)}
+.no-webgl .sky-fallback{display:block}
+.no-webgl .sky{display:none}
+.page{position:relative;z-index:2}
+
+/* ---------- type ---------- */
+.h-big{text-transform:uppercase;font-weight:300;color:var(--fog);letter-spacing:.10em;
+  line-height:1.3;font-size:clamp(1.6rem,4vw,3.2rem);text-shadow:0 1px 24px rgba(20,35,45,.35)}
+.eyebrow{text-transform:uppercase;letter-spacing:.34em;font-size:.7rem;font-weight:400;color:var(--fog-70)}
+p.body{max-width:56ch;color:var(--fog-70);font-weight:300}
+.char{display:inline-block;white-space:pre}
+.diamond{position:relative;width:52px;height:52px;flex:none;display:flex;align-items:center;justify-content:center}
+.diamond::before{content:"";position:absolute;inset:6px;border:1px solid var(--line-w);transform:rotate(45deg);transition:transform 1s var(--ease)}
+.diamond span{font-size:.8rem;font-weight:400;color:var(--fog)}
+.diamond:hover::before{transform:rotate(135deg)}
+.cta-circle{display:inline-flex;flex-direction:column;gap:1rem;width:fit-content}
+.cta-circle .cc-row{display:inline-flex;align-items:center;gap:1.2rem}
+.cta-circle .cc-label{text-transform:uppercase;letter-spacing:.3em;font-size:.72rem;font-weight:500;color:var(--fog)}
+.cta-circle .cc-ring{width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.92);
+  display:flex;align-items:center;justify-content:center;flex:none;transition:transform .5s var(--ease)}
+.cta-circle .cc-ring svg{width:16px;height:16px;transition:transform .45s var(--ease)}
+.cta-circle .cc-ring svg path{stroke:var(--steel);stroke-width:1.6;fill:none}
+.cta-circle:hover .cc-ring{transform:scale(1.12)}
+.cta-circle:hover .cc-ring svg{transform:translateX(3px)}
+.cta-circle .cc-line{height:1px;width:min(220px,40vw);background:var(--line-w);transform-origin:left;transition:transform .7s var(--ease)}
+.cta-circle:hover .cc-line{transform:scaleX(1.25)}
+
+/* ---------- preloader ---------- */
+.preloader{position:fixed;inset:0;z-index:3000;background:linear-gradient(180deg,#7e94a0,#54697a 60%,#41586a);
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1.6rem}
+.preloader .diamond{width:64px;height:64px}
+.preloader .diamond::before{border-color:rgba(255,255,255,.7)}
+.pl-word{display:flex;gap:.42em;text-transform:uppercase;font-weight:300;
+  font-size:clamp(1.3rem,3.4vw,2rem);letter-spacing:.2em;color:#fff}
+.pl-word span{opacity:0}
+.pl-sub{text-transform:uppercase;letter-spacing:.4em;font-size:.62rem;color:rgba(255,255,255,.65);opacity:0}
+
+/* ---------- header / menu ---------- */
+.site-header{position:fixed;top:0;left:0;right:0;z-index:1001;display:flex;align-items:center;gap:3rem;
+  padding:1.5rem var(--gutter);transition:transform .6s var(--ease),background .5s,padding .5s}
+.site-header.is-solid{background:linear-gradient(180deg,rgba(30,42,52,.72),rgba(30,42,52,0));backdrop-filter:blur(8px);padding:1rem var(--gutter)}
+.site-header.is-hidden{transform:translateY(-110%)}
+.brand{display:flex;align-items:center;gap:.9rem}
+.brand .diamond{width:34px;height:34px}
+.brand .diamond::before{inset:3px}
+.brand .diamond i{position:absolute;inset:13px;background:#fff;transform:rotate(45deg)}
+.brand-name{text-transform:uppercase;font-weight:400;letter-spacing:.42em;font-size:.95rem;color:#fff}
+.main-nav{display:none;gap:2.4rem;margin-left:1rem}
+@media(min-width:820px){.main-nav{display:flex}}
+.main-nav a{text-transform:uppercase;font-size:.66rem;letter-spacing:.24em;font-weight:400;color:var(--fog-70);
+  position:relative;padding:.3rem 0;transition:color .35s}
+.main-nav a::after{content:"";position:absolute;left:0;bottom:0;height:1px;width:100%;background:#fff;
+  transform:scaleX(0);transform-origin:right;transition:transform .5s var(--ease)}
+.main-nav a:hover,.main-nav a.is-current{color:#fff}
+.main-nav a:hover::after,.main-nav a.is-current::after{transform:scaleX(1);transform-origin:left}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:2rem}
+.menu-toggle{display:flex;align-items:center;gap:.9rem}
+.menu-toggle .mt-label{text-transform:uppercase;font-size:.66rem;letter-spacing:.3em;color:#fff}
+.menu-toggle .mt-icon{width:26px;height:11px;position:relative}
+.menu-toggle .mt-icon i{position:absolute;left:0;right:0;height:1px;background:#fff;transition:transform .5s var(--ease),top .5s var(--ease),width .4s}
+.menu-toggle .mt-icon i:first-child{top:0}
+.menu-toggle .mt-icon i:last-child{top:9px;width:70%}
+.menu-toggle:hover .mt-icon i:last-child{width:100%}
+.menu-open .menu-toggle .mt-icon i:first-child{top:4.5px;transform:rotate(45deg)}
+.menu-open .menu-toggle .mt-icon i:last-child{top:4.5px;width:100%;transform:rotate(-45deg)}
+.menu-overlay{position:fixed;inset:0;z-index:1000;visibility:hidden;
+  background:linear-gradient(200deg,rgba(52,72,88,.94),rgba(28,44,56,.96));backdrop-filter:blur(18px);
+  clip-path:inset(0 0 100% 0);display:flex;flex-direction:column;justify-content:center;padding:6rem var(--gutter) 3rem}
+.menu-nav{display:flex;flex-direction:column;gap:.2rem}
+.menu-link{display:flex;align-items:baseline;gap:1.6rem;width:fit-content;padding:.35rem 0}
+.menu-link .ml-num{font-size:.68rem;letter-spacing:.2em;color:var(--fog-50)}
+.menu-link .ml-text{display:inline-block;text-transform:uppercase;font-weight:200;
+  font-size:clamp(1.9rem,6vw,4.2rem);letter-spacing:.14em;line-height:1.15;color:var(--fog);
+  transition:letter-spacing .6s var(--ease),color .4s}
+.menu-link:hover .ml-text{letter-spacing:.22em;color:#fff}
+.menu-foot{margin-top:4rem;display:flex;justify-content:space-between;gap:2rem;flex-wrap:wrap;
+  border-top:1px solid rgba(255,255,255,.18);padding-top:1.5rem;
+  text-transform:uppercase;font-size:.62rem;letter-spacing:.26em;color:var(--fog-50)}
+
+/* ---------- side ui + journey dots ---------- */
+.side-ui{position:fixed;right:clamp(1rem,3vw,2.6rem);bottom:clamp(1.2rem,4vh,2.6rem);z-index:800;
+  display:flex;flex-direction:column;align-items:center;gap:1.2rem}
+.to-top{width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.45);
+  display:flex;align-items:center;justify-content:center;transition:background .4s;opacity:0;pointer-events:none}
+.to-top.is-on{opacity:1;pointer-events:auto}
+.to-top:hover{background:rgba(255,255,255,.9)}
+.to-top svg path{stroke:#fff;stroke-width:1.4;fill:none;transition:stroke .3s}
+.to-top:hover svg path{stroke:var(--steel)}
+.progress-dash{width:22px;height:1px;background:rgba(255,255,255,.6);transform-origin:left}
+.journey-dots{position:fixed;left:clamp(.7rem,2vw,1.8rem);top:50%;transform:translateY(-50%);z-index:800;
+  display:flex;flex-direction:column;gap:1rem;opacity:0;pointer-events:none;transition:opacity .5s}
+.journey-dots.is-on{opacity:1;pointer-events:auto}
+.jdot{display:flex;align-items:center;gap:.7rem;padding:.2rem}
+.jdot i{width:7px;height:7px;border:1px solid rgba(255,255,255,.7);transform:rotate(45deg);transition:background .4s,transform .4s;flex:none}
+.jdot span{text-transform:uppercase;font-size:.56rem;letter-spacing:.26em;color:var(--fog-70);
+  opacity:0;transform:translateX(-6px);transition:opacity .35s,transform .35s;white-space:nowrap}
+.jdot:hover span,.jdot.is-on span{opacity:1;transform:none}
+.jdot.is-on i{background:#fff;transform:rotate(45deg) scale(1.2)}
+@media(max-width:640px){.journey-dots .jdot span{display:none}}
+
+/* ---------- hero ---------- */
+.hero{min-height:100svh;display:flex;flex-direction:column;justify-content:center;position:relative;padding:0 var(--gutter);overflow:hidden;perspective:1100px}
+.hero-visual{position:absolute;inset:-4% -2%;z-index:0;will-change:transform;pointer-events:none;
+  -webkit-mask-image:linear-gradient(to bottom,#000 0,#000 78%,transparent 100%);
+  mask-image:linear-gradient(to bottom,#000 0,#000 78%,transparent 100%)}
+.hero-base{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(.8) contrast(1.06);animation:heroDrift 36s var(--ease) infinite alternate}
+.hero-visual::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(28,42,56,.30),rgba(28,42,56,.08) 42%,rgba(16,28,40,.82)),radial-gradient(120% 78% at 50% 4%,rgba(120,150,175,.22),transparent 62%);mix-blend-mode:multiply;pointer-events:none}
+@keyframes heroDrift{from{transform:scale(1.05) translate3d(0,0,0)}to{transform:scale(1.13) translate3d(-1.4%,-1.1%,0)}}
+.hlayer{position:absolute;left:-4%;right:-4%;bottom:-2%;width:108%;height:auto;will-change:transform}
+.hlayer img{width:100%;height:auto;display:block}
+.hcloud{position:absolute;will-change:transform;pointer-events:none}
+.hero-inner{position:relative;z-index:2;padding-top:clamp(4.5rem,9vh,6.5rem)}
+.hero-stack{display:flex;flex-direction:column;gap:.1em}
+.hero-stack .hs-line{text-transform:uppercase;font-weight:200;color:#fff;
+  font-size:clamp(2.2rem,6.6vw,5.6rem);letter-spacing:.14em;line-height:1.16;
+  text-shadow:0 2px 34px rgba(15,28,38,.55)}
+.hero-stack .hs-line.dim{color:rgba(255,255,255,.55)}
+.hero-line{margin-top:2.2rem;max-width:34ch;color:var(--fog-70);font-weight:300;
+  font-size:clamp(1rem,1.4vw,1.25rem);line-height:1.9;letter-spacing:.04em;
+  text-shadow:0 1px 18px rgba(15,28,38,.5)}
+.skip-intro{position:absolute;right:var(--gutter);bottom:clamp(1.6rem,5vh,3rem);z-index:3;
+  text-transform:uppercase;font-size:.6rem;letter-spacing:.3em;color:var(--fog-70);
+  border:1px solid rgba(255,255,255,.35);border-radius:99px;padding:.6rem 1.2rem;transition:background .4s,color .4s}
+.skip-intro:hover{background:rgba(255,255,255,.9);color:var(--steel)}
+
+/* ---------- chapters ---------- */
+/* breath: pure-atmosphere pause between chapters - gives the descent pacing
+   and room for the cloud gates to perform */
+.breath{height:52svh;pointer-events:none}
+@media(max-width:640px){.breath{height:34svh}}
+.panel{position:relative;padding:clamp(7rem,16vh,11rem) var(--gutter)}
+.chapter{min-height:100svh;display:flex;flex-direction:column;justify-content:center}
+.panel-head{display:flex;align-items:flex-start;gap:clamp(1.4rem,3vw,2.6rem);margin-bottom:2.2rem}
+.panel-head .ph-text{padding-top:.4rem}
+.ch-label{margin:0 0 1.2rem;font-size:.78rem;letter-spacing:.3em;color:var(--fog-70);font-weight:400;text-transform:uppercase}
+.chapter p.body{margin-top:1.8rem}
+.chapter .cta-circle{margin-top:2.8rem}
+.ch-inner{max-width:860px;position:relative;z-index:2;padding:clamp(1.2rem,3vw,2.4rem)}
+.ch-inner::before{content:"";position:absolute;inset:-8%;z-index:-1;border-radius:24px;
+  background:radial-gradient(60% 60% at 30% 40%,rgba(14,24,32,.45),transparent 75%);filter:blur(6px)}
+/* cinematic real-photo scene backgrounds */
+.chapter.has-photo{overflow:hidden}
+.chapter.has-photo .silhouette,.chapter.has-photo .plane-wrap{display:none}
+.scene-bg{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none;
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 20vh,#000 calc(100% - 20vh),transparent 100%),
+                     linear-gradient(to right,transparent 0,#000 6vw,#000 calc(100% - 6vw),transparent 100%);
+  -webkit-mask-composite:source-in;
+  mask-image:linear-gradient(to bottom,transparent 0,#000 20vh,#000 calc(100% - 20vh),transparent 100%),
+             linear-gradient(to right,transparent 0,#000 6vw,#000 calc(100% - 6vw),transparent 100%);
+  mask-composite:intersect}
+.scene-bg img{position:absolute;inset:-8%;width:116%;height:116%;object-fit:cover;will-change:transform}
+.scene-bg::after{content:"";position:absolute;inset:0;pointer-events:none}
+.scene-bg[data-grade="warm"] img{filter:brightness(.68) contrast(1.06) saturate(1.08) sepia(.12)}
+.scene-bg[data-grade="warm"]::after{background:linear-gradient(180deg,rgba(46,30,14,.42),rgba(34,22,12,.12) 42%,rgba(14,12,20,.82)),radial-gradient(120% 82% at 50% 8%,rgba(224,158,74,.22),transparent 60%);mix-blend-mode:multiply}
+.scene-bg[data-grade="dawn"] img{filter:brightness(.72) contrast(1.05) saturate(1.04)}
+.scene-bg[data-grade="dawn"]::after{background:linear-gradient(180deg,rgba(52,40,28,.4),rgba(40,30,22,.12) 44%,rgba(16,14,22,.8)),radial-gradient(120% 82% at 50% 12%,rgba(236,190,120,.2),transparent 60%);mix-blend-mode:multiply}
+.scene-bg[data-grade="sky"] img{filter:brightness(.84) contrast(1.03) saturate(1.02)}
+.scene-bg[data-grade="sky"]::after{background:linear-gradient(180deg,rgba(120,150,180,.28),rgba(150,175,200,.06) 40%,rgba(30,42,58,.72));mix-blend-mode:multiply}
+.scene-bg[data-grade="dusk"] img{filter:brightness(.6) contrast(1.09) saturate(1.12)}
+.scene-bg[data-grade="dusk"]::after{background:linear-gradient(180deg,rgba(34,28,58,.46),rgba(26,24,48,.14) 40%,rgba(10,10,24,.86)),radial-gradient(120% 80% at 50% 92%,rgba(130,96,190,.28),transparent 62%);mix-blend-mode:multiply}
+.globe-stage::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:1;background:radial-gradient(58% 54% at 50% 46%,rgba(191,214,230,.22),transparent 62%);mix-blend-mode:screen}
+.chapter.align-right .ch-inner{margin-left:auto}
+.silhouette{position:absolute;left:0;right:0;bottom:0;pointer-events:none;z-index:1;display:flex;justify-content:center;overflow:hidden}
+.silhouette svg{width:100%;height:auto;min-width:900px}
+.sil-dark{fill:#232e36;opacity:.92}
+.sil-mid{fill:#33424d;opacity:.85}
+.sil-soft{fill:rgba(255,255,255,.14)}
+.sil-line{stroke:rgba(255,255,255,.5);fill:none;stroke-width:1.2}
+.sil-glow{fill:rgba(255,240,200,.85)}
+.stupa-eye{fill:#1c262d}
+.flagline{stroke:rgba(255,255,255,.55);stroke-width:1;fill:none}
+.flag{opacity:.85}
+.flag.f1{fill:#4a7dbb}.flag.f2{fill:#f4f4f4}.flag.f3{fill:#d95b43}.flag.f4{fill:#5a9e6f}.flag.f5{fill:#e2b93b}
+/* ---------- story beats: passages placed in the scene ---------- */
+.beat{position:relative;z-index:2;max-width:1100px;display:flex;flex-direction:column;gap:clamp(2.5rem,8vh,5rem)}
+.beat-low{justify-content:flex-end;min-height:70svh}
+.passage-lead{text-transform:uppercase;font-weight:300;color:var(--fog);letter-spacing:.1em;
+  line-height:1.28;font-size:clamp(1.7rem,4.2vw,3.4rem);max-width:18ch;
+  text-shadow:0 1px 26px rgba(15,25,35,.5)}
+.passage{max-width:36ch;color:var(--fog-70);font-weight:300;line-height:2;letter-spacing:.03em;
+  font-size:clamp(.95rem,1.2vw,1.15rem);text-shadow:0 1px 14px rgba(15,25,35,.55)}
+.passage.p-right{align-self:flex-end;text-align:left}
+.passage.p-left{align-self:flex-start}
+
+/* ---------- the flight: pinned horizontal pan ---------- */
+.pan-stage{min-height:100svh;display:flex;align-items:center;overflow:hidden;padding:0}
+.pan-track{display:flex;align-items:center;gap:clamp(3rem,9vw,9rem);padding:0 14vw;will-change:transform}
+.pan-item{flex:0 0 auto}
+.pan-track .passage-lead{max-width:14ch}
+.pan-photo{width:min(74vw,980px);margin:0}
+.pan-photo img{width:100%;height:min(62svh,640px);object-fit:cover;
+  box-shadow:0 30px 90px rgba(8,16,24,.45)}
+@media(max-width:767px){
+  .pan-stage{min-height:0;padding:clamp(7rem,16vh,11rem) var(--gutter)}
+  .pan-track{flex-direction:column;align-items:flex-start;padding:0;gap:2.5rem}
+  .pan-photo{width:100%}
+  .pan-photo img{height:auto}
+}
+
+/* stupa zoom beat: lead line sits low while the photo pulls back */
+.beat-zoom{min-height:82svh;justify-content:flex-end}
+
+.win{fill:rgba(255,224,150,.9);animation:blink 4s infinite}
+.win:nth-of-type(3n){animation-delay:1.3s}
+.win:nth-of-type(4n){animation-delay:2.2s}
+@keyframes blink{0%,92%,100%{opacity:.9}95%{opacity:.15}}
+
+/* ---------- globe ---------- */
+.globe-stage{position:relative;height:100svh}
+.globe-canvas{position:absolute;inset:0;width:100%;height:100%}
+.globe-overlay{position:absolute;inset:0;pointer-events:none}
+.geo-label{position:absolute;display:flex;align-items:center;gap:.7rem;transform:translate(-50%,-50%);
+  text-transform:uppercase;font-size:.68rem;letter-spacing:.3em;font-weight:400;color:#fff;opacity:0;white-space:nowrap;
+  text-shadow:0 1px 12px rgba(0,0,0,.6)}
+.geo-label i{width:9px;height:9px;border-radius:50%;background:#fff;box-shadow:0 0 14px rgba(255,255,255,.9);flex:none}
+.geo-label.waypoint{font-size:.58rem;color:var(--fog-70)}
+.geo-label.waypoint i{width:5px;height:5px;box-shadow:none;background:rgba(255,255,255,.6)}
+.globe-caption{position:absolute;left:50%;bottom:8%;transform:translateX(-50%);
+  text-transform:uppercase;font-size:.62rem;letter-spacing:.4em;color:var(--fog-70);opacity:0;white-space:nowrap;
+  text-shadow:0 1px 10px rgba(0,0,0,.6)}
+
+/* ---------- about ---------- */
+.about{min-height:100svh}
+.about-grid{display:grid;grid-template-columns:1fr;gap:3rem;max-width:1200px;position:relative;z-index:2}
+@media(min-width:900px){.about-grid{grid-template-columns:.9fr 1.4fr;gap:4.5rem;align-items:start}}
+.portrait{position:relative;max-width:380px}
+.portrait::before{content:"";position:absolute;inset:0;transform:translate(14px,14px);border:1px solid var(--line-w);z-index:-1}
+.portrait img{width:100%;aspect-ratio:4/5;object-fit:cover;filter:saturate(.92)}
+.about-lists{display:grid;grid-template-columns:1fr;gap:2.5rem;margin-top:2.8rem}
+@media(min-width:640px){.about-lists{grid-template-columns:1fr 1fr}}
+.about-lists h3{text-transform:uppercase;font-weight:400;letter-spacing:.3em;font-size:.72rem;color:var(--fog-70);
+  margin-bottom:1.2rem;display:flex;align-items:center;gap:.9rem}
+.about-lists h3::before{content:"";width:2rem;height:1px;background:rgba(255,255,255,.5)}
+.about-lists ul{list-style:none}
+.about-lists li{padding:.7rem 0;border-bottom:1px solid rgba(255,255,255,.16);color:var(--fog-70);
+  display:flex;gap:1rem;font-size:.95em}
+.about-lists li::before{content:"";width:6px;height:6px;border:1px solid rgba(255,255,255,.7);transform:rotate(45deg);flex:none;margin-top:.7em}
+
+/* ---------- photography ---------- */
+.gallery{min-height:100svh}
+.gallery-head{max-width:860px;position:relative;z-index:2}
+.filter-tabs{display:flex;gap:clamp(1.2rem,3vw,2.4rem);margin:2.6rem 0 3rem;flex-wrap:wrap;position:relative;z-index:2}
+.filter-tab{text-transform:uppercase;font-size:.68rem;letter-spacing:.3em;font-weight:400;color:var(--fog-50);
+  padding:.6rem 0;position:relative;transition:color .35s}
+.filter-tab::after{content:"";position:absolute;left:0;bottom:0;height:1px;width:100%;background:#fff;
+  transform:scaleX(0);transform-origin:right;transition:transform .5s var(--ease)}
+.filter-tab.is-on{color:#fff}
+.filter-tab.is-on::after{transform:scaleX(1);transform-origin:left}
+.masonry{columns:1;column-gap:1.2rem;position:relative;z-index:2}
+@media(min-width:560px){.masonry{columns:2}}
+@media(min-width:1000px){.masonry{columns:3}}
+.ph-item{break-inside:avoid;margin-bottom:1.2rem;position:relative;overflow:hidden;cursor:pointer;
+  border:0;padding:0;width:100%;text-align:left;background:#2a3844;display:block}
+.ph-item .ph-box{display:block;position:relative;width:100%;overflow:hidden;background:linear-gradient(150deg,#33434f,#222d36)}
+.ph-item img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  opacity:0;transform:scale(1.04);transition:opacity .9s ease,transform 1.4s var(--ease)}
+.ph-item img.is-loaded{opacity:1;transform:scale(1)}
+.ph-item:hover img.is-loaded{transform:scale(1.05)}
+.ph-cap{position:absolute;left:0;right:0;bottom:0;padding:2.2rem 1rem .8rem;z-index:2;
+  background:linear-gradient(to top,rgba(10,18,24,.78),transparent);
+  display:flex;justify-content:space-between;align-items:baseline;gap:.8rem}
+.ph-cap .t{font-size:.8rem;letter-spacing:.06em;color:#fff}
+.ph-cap .l{text-transform:uppercase;font-size:.56rem;letter-spacing:.24em;color:var(--fog-70);white-space:nowrap}
+.load-more{margin:3rem auto 0;display:flex;justify-content:center;position:relative;z-index:2}
+
+/* ---------- lightbox ---------- */
+.lightbox{position:fixed;inset:0;z-index:2500;background:rgba(8,14,19,.94);backdrop-filter:blur(10px);
+  display:none;align-items:center;justify-content:center;flex-direction:column;padding:4.5rem 1rem 5.5rem}
+.lightbox.is-open{display:flex}
+.lb-img-wrap{position:relative;max-width:min(1100px,92vw);max-height:72vh;display:flex;align-items:center;justify-content:center}
+.lb-img-wrap img{max-width:100%;max-height:72vh;object-fit:contain;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.lb-meta{margin-top:1.4rem;text-align:center;max-width:60ch}
+.lb-meta .t{font-size:.95rem;letter-spacing:.05em;color:#fff}
+.lb-meta .l{text-transform:uppercase;font-size:.6rem;letter-spacing:.3em;color:var(--fog-50);margin-top:.4rem}
+.lb-btn{position:absolute;top:50%;transform:translateY(-50%);width:52px;height:52px;border-radius:50%;
+  border:1px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;transition:background .3s;z-index:2}
+.lb-btn:hover{background:rgba(255,255,255,.12)}
+.lb-btn svg path{stroke:#fff;stroke-width:1.5;fill:none}
+.lb-prev{left:clamp(.4rem,3vw,2.5rem)}
+.lb-next{right:clamp(.4rem,3vw,2.5rem)}
+.lb-close{position:absolute;top:1.4rem;right:clamp(1rem,3vw,2.5rem);width:48px;height:48px;border-radius:50%;
+  border:1px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;transition:background .3s}
+.lb-close:hover{background:rgba(255,255,255,.12)}
+.lb-close svg path{stroke:#fff;stroke-width:1.5}
+.lb-count{position:absolute;top:2.2rem;left:clamp(1rem,3vw,2.5rem);
+  text-transform:uppercase;font-size:.62rem;letter-spacing:.3em;color:var(--fog-50)}
+
+/* ---------- footer ---------- */
+.site-footer{position:relative;z-index:3;background:#fff;color:var(--steel);padding:clamp(4.5rem,10vh,7.5rem) var(--gutter) 3rem}
+.footer-grid{display:grid;grid-template-columns:1fr;gap:3rem;max-width:1400px}
+@media(min-width:900px){.footer-grid{grid-template-columns:1.2fr 1fr 1fr}}
+.f-nav{display:flex;flex-direction:column;gap:.4rem}
+.f-nav a{text-transform:uppercase;font-size:.72rem;letter-spacing:.22em;font-weight:400;color:var(--steel);
+  padding:.35rem 0;width:fit-content;position:relative}
+.f-nav a::after{content:"";position:absolute;left:0;bottom:0;height:1px;width:100%;background:var(--steel);
+  transform:scaleX(0);transform-origin:right;transition:transform .5s var(--ease)}
+.f-nav a:hover::after,.f-nav a:focus-visible::after{transform:scaleX(1);transform-origin:left}
+.f-col h3{text-transform:uppercase;font-weight:400;letter-spacing:.2em;font-size:1.1rem;margin-bottom:1.4rem;line-height:1.5}
+.f-col p{color:var(--steel-soft);font-size:.85rem;line-height:2;letter-spacing:.04em;max-width:34ch}
+.f-col a{color:var(--steel-2)}
+.f-col a:hover{text-decoration:underline}
+.f-socials{display:flex;flex-direction:column;gap:.3rem;margin-top:.6rem}
+.f-credits{margin-top:clamp(3rem,7vh,5rem);padding-top:2rem;border-top:1px solid rgba(53,99,138,.18);max-width:1400px}
+.f-credits h4{text-transform:uppercase;letter-spacing:.28em;font-size:.62rem;color:var(--steel-soft);margin-bottom:1rem;font-weight:500}
+.f-credits ul{list-style:none;display:grid;grid-template-columns:1fr;gap:.5rem}
+@media(min-width:700px){.f-credits ul{grid-template-columns:repeat(3,1fr)}}
+.f-credits li{font-size:.72rem;line-height:1.6;color:var(--steel-2);letter-spacing:.02em}
+.f-credits li span{color:var(--steel-soft)}
+.f-credits a{color:var(--steel);border-bottom:1px solid rgba(53,99,138,.3)}
+.footer-bottom{margin-top:clamp(3.5rem,8vh,5.5rem);border-top:1px solid rgba(53,99,138,.25);
+  padding-top:2.2rem;display:flex;align-items:center;justify-content:space-between;gap:2rem;flex-wrap:wrap}
+.f-brand{display:flex;align-items:center;gap:1.1rem}
+.f-brand .diamond{width:38px;height:38px}
+.f-brand .diamond::before{border-color:var(--steel);inset:4px}
+.f-brand .diamond i{position:absolute;inset:15px;background:var(--steel);transform:rotate(45deg)}
+.f-brand .f-word{text-transform:uppercase;letter-spacing:.55em;font-weight:400;font-size:1.1rem;color:var(--steel)}
+.f-copy{font-size:.68rem;letter-spacing:.14em;color:var(--steel-soft);text-transform:uppercase}
+.site-footer :focus-visible{outline-color:var(--steel)}
+
+.no-motion .preloader{display:none}
+@media(prefers-reduced-motion:reduce){
+  .win{animation:none}
+  .hero-base{animation:none}
+  .ph-item img{transition:opacity .3s}
+}
+</style>
+</head>
+<body>
+<canvas class="sky" id="sky" aria-hidden="true"></canvas>
+<canvas class="dust" id="dust" aria-hidden="true"></canvas>
+<canvas class="gates" id="gates" aria-hidden="true"></canvas>
+<div class="atmosphere" id="atmosphere" aria-hidden="true"></div>
+<div class="sky-fallback" id="skyFallback" aria-hidden="true"></div>
+
+<div class="preloader" id="preloader" aria-hidden="true">
+  <div class="diamond"></div>
+  <div class="pl-word" id="plWord"></div>
+  <div class="pl-sub" id="plSub"></div>
+</div>
+
+<header class="site-header" id="siteHeader">
+  <a class="brand" href="#journey" data-scrollto="#journey" aria-label="Home, The Journey">
+    <span class="diamond" aria-hidden="true"><i></i></span>
+    <span class="brand-name" id="brandName"></span>
+  </a>
+  <nav class="main-nav" id="mainNav" aria-label="Primary"></nav>
+  <div class="header-right">
+    <button class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false" aria-controls="menuOverlay">
+      <span class="mt-label" id="menuToggleLabel">Menu</span>
+      <span class="mt-icon" aria-hidden="true"><i></i><i></i></span>
+    </button>
+  </div>
+</header>
+
+<div class="menu-overlay" id="menuOverlay" aria-hidden="true" role="dialog" aria-label="Site menu">
+  <nav class="menu-nav" id="menuNav" aria-label="Menu"></nav>
+  <div class="menu-foot"><span id="menuFootLeft"></span><span id="menuFootRight"></span></div>
+</div>
+
+<div class="side-ui">
+  <button class="to-top" id="toTop" aria-label="Back to top">
+    <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 13V3M3.5 7.5L8 3l4.5 4.5"/></svg>
+  </button>
+  <span class="progress-dash" id="progressDash" aria-hidden="true"></span>
+</div>
+<nav class="journey-dots" id="journeyDots" aria-label="Journey scenes"></nav>
+
+<main class="page" id="top">
+
+<!-- ═══════════ THE JOURNEY (scroll experience) ═══════════ -->
+<div id="journey">
+
+  <section class="hero" id="hero" aria-label="The Himalayas">
+    <div class="hero-visual" id="heroVisual" aria-hidden="true"></div>
+    <div class="hero-inner">
+      <div class="hero-stack" id="heroStack"></div>
+      <p class="hero-line" id="heroLine" data-fade></p>
+    </div>
+    <button class="skip-intro" id="skipIntro"></button>
+  </section>
+
+  <div class="breath" aria-hidden="true"></div>
+
+  <section class="panel chapter" id="ch-durbar">
+    <div class="silhouette" aria-hidden="true" data-parallax="temples">
+      <svg viewBox="0 0 1200 340" preserveAspectRatio="xMidYMax slice">
+        <path class="sil-soft" d="M0 300 Q300 286 600 296 T1200 292 L1200 340 L0 340 Z"/>
+        <g class="sil-dark">
+          <rect x="430" y="308" width="340" height="32"/>
+          <rect x="455" y="292" width="290" height="18"/>
+          <rect x="480" y="276" width="240" height="18"/>
+          <path d="M470 276 L600 262 L730 276 L716 252 L600 240 L484 252 Z"/>
+          <rect x="530" y="252" width="140" height="14"/>
+          <path d="M510 252 L600 214 L690 252 L676 228 L600 196 L524 228 Z"/>
+          <rect x="556" y="214" width="88" height="16"/>
+          <path d="M540 214 L600 178 L660 214 L648 192 L600 162 L552 192 Z"/>
+          <rect x="590" y="150" width="20" height="14"/>
+          <path d="M594 150 L600 128 L606 150 Z"/>
+        </g>
+        <g class="sil-mid">
+          <rect x="150" y="316" width="200" height="24"/>
+          <rect x="170" y="302" width="160" height="16"/>
+          <path d="M160 302 L250 284 L340 302 L328 282 L250 266 L172 282 Z"/>
+          <rect x="212" y="266" width="76" height="18"/>
+          <path d="M200 266 L250 236 L300 266 L290 246 L250 224 L210 246 Z"/>
+          <rect x="244" y="212" width="12" height="14"/>
+        </g>
+        <g class="sil-mid">
+          <rect x="880" y="318" width="180" height="22"/>
+          <rect x="900" y="300" width="140" height="20"/>
+          <path d="M892 300 L970 278 L1048 300 L1036 282 L970 262 L904 282 Z"/>
+          <rect x="952" y="248" width="36" height="16"/>
+          <path d="M950 248 L970 230 L990 248 Z"/>
+          <rect x="1090" y="308" width="90" height="32"/>
+          <rect x="30" y="314" width="90" height="26"/>
+        </g>
+      </svg>
+    </div>
+    <!-- ✏️ chapter text comes from CONFIG.chapters (lead + passages) -->
+    <div class="beat">
+      <h2 class="passage-lead" data-chars data-ch-lead="#ch-durbar"></h2>
+      <p class="passage p-right" data-fade data-ch-passage="#ch-durbar"></p>
+    </div>
+  </section>
+
+  <div class="breath" aria-hidden="true"></div>
+
+  <section class="panel chapter align-right" id="ch-stupa">
+    <div class="silhouette" aria-hidden="true" data-parallax="stupa">
+      <svg viewBox="0 0 1200 420" preserveAspectRatio="xMidYMax slice">
+        <path class="sil-mid" d="M0 420 L0 392 Q300 348 600 356 Q900 364 1200 396 L1200 420 Z"/>
+        <g>
+          <path class="sil-dark" d="M420 360 Q420 258 600 252 Q780 258 780 360 Z"/>
+          <rect class="sil-glow" x="562" y="196" width="76" height="58" rx="4"/>
+          <path class="stupa-eye" d="M576 218 q12 -12 22 0 q-10 8 -22 0 Z"/>
+          <path class="stupa-eye" d="M602 218 q12 -12 22 0 q-10 8 -22 0 Z"/>
+          <path class="stupa-eye" d="M596 226 q4 8 8 0 l-4 12 Z"/>
+          <path class="sil-dark" d="M566 196 L600 78 L634 196 Z"/>
+          <g class="sil-line">
+            <line x1="572" y1="188" x2="628" y2="188"/><line x1="575" y1="178" x2="625" y2="178"/>
+            <line x1="578" y1="168" x2="622" y2="168"/><line x1="581" y1="158" x2="619" y2="158"/>
+            <line x1="584" y1="148" x2="616" y2="148"/><line x1="587" y1="138" x2="613" y2="138"/>
+            <line x1="590" y1="128" x2="610" y2="128"/><line x1="592" y1="118" x2="608" y2="118"/>
+            <line x1="594" y1="108" x2="606" y2="108"/><line x1="596" y1="98" x2="604" y2="98"/>
+          </g>
+          <rect class="sil-glow" x="586" y="66" width="28" height="8" rx="3"/>
+          <path class="sil-glow" d="M597 66 L600 44 L603 66 Z"/>
+        </g>
+        <g id="flagsL">
+          <path class="flagline" d="M600 70 Q440 130 300 220"/>
+          <path class="flag f1" d="M545 92 l16 -6 l-2 16 Z"/><path class="flag f2" d="M505 110 l16 -6 l-2 16 Z"/>
+          <path class="flag f3" d="M462 132 l16 -6 l-2 16 Z"/><path class="flag f4" d="M420 156 l16 -6 l-2 16 Z"/>
+          <path class="flag f5" d="M378 182 l16 -6 l-2 16 Z"/><path class="flag f1" d="M338 202 l16 -6 l-2 16 Z"/>
+        </g>
+        <g id="flagsR">
+          <path class="flagline" d="M600 70 Q760 130 900 220"/>
+          <path class="flag f3" d="M655 88 l-16 -6 l2 16 Z"/><path class="flag f4" d="M695 106 l-16 -6 l2 16 Z"/>
+          <path class="flag f5" d="M738 128 l-16 -6 l2 16 Z"/><path class="flag f1" d="M780 152 l-16 -6 l2 16 Z"/>
+          <path class="flag f2" d="M822 178 l-16 -6 l2 16 Z"/><path class="flag f3" d="M862 198 l-16 -6 l2 16 Z"/>
+        </g>
+        <g class="sil-dark">
+          <circle cx="382" cy="368" r="7"/><ellipse cx="392" cy="380" rx="12" ry="8"/><path class="sil-line" d="M402 378 q14 -8 10 -20"/>
+          <circle cx="836" cy="374" r="6"/><ellipse cx="828" cy="384" rx="10" ry="7"/>
+        </g>
+      </svg>
+    </div>
+    <!-- pinned zoom beat: photo pulls back from the painted eyes as you scroll -->
+    <div class="beat beat-zoom">
+      <h2 class="passage-lead" data-ch-lead="#ch-stupa"></h2>
+    </div>
+  </section>
+
+  <div class="breath" aria-hidden="true"></div>
+
+  <!-- the flight: the site's one horizontal moment. Vertical scroll becomes
+       lateral travel while this stage is pinned (stacks vertically on mobile
+       and under reduced motion). -->
+  <section class="chapter pan-stage" id="ch-flight" aria-label="The Flight">
+    <div class="pan-track" id="panTrack">
+      <h2 class="passage-lead pan-item" data-chars data-ch-lead="#ch-flight"></h2>
+      <figure class="pan-item pan-photo">
+        <img src="assets/flight-wing-sunset.jpg" alt="Airplane wing above clouds at sunset" loading="lazy" decoding="async"/>
+      </figure>
+      <p class="passage pan-item" data-fade data-ch-passage="#ch-flight"></p>
+    </div>
+  </section>
+
+  <div class="breath" aria-hidden="true"></div>
+
+  <section class="panel chapter" id="ch-globe" style="min-height:60svh">
+    <div class="beat">
+      <h2 class="passage-lead" data-chars data-ch-lead="#ch-globe"></h2>
+    </div>
+  </section>
+  <div class="globe-stage" id="globeStage" aria-label="Flight from Kathmandu to Toronto on a 3D globe">
+    <canvas class="globe-canvas" id="globeCanvas" aria-hidden="true"></canvas>
+    <div class="globe-overlay" id="globeOverlay" aria-hidden="true"></div>
+    <span class="globe-caption" id="globeCaption"></span>
+  </div>
+
+  <div class="breath" aria-hidden="true"></div>
+
+  <section class="panel chapter" id="ch-toronto">
+    <div class="silhouette" aria-hidden="true" data-parallax="toronto">
+      <svg viewBox="0 0 1200 380" preserveAspectRatio="xMidYMax slice">
+        <path class="sil-soft" d="M0 356 Q300 348 600 354 T1200 352 L1200 380 L0 380 Z"/>
+        <g class="sil-mid">
+          <rect x="60" y="240" width="70" height="120"/><rect x="160" y="200" width="55" height="160"/>
+          <rect x="250" y="256" width="80" height="104"/><rect x="760" y="216" width="60" height="144"/>
+          <rect x="850" y="248" width="90" height="112"/><rect x="1080" y="230" width="70" height="130"/>
+        </g>
+        <g class="sil-dark">
+          <path d="M594 360 L590 210 L586 200 L598 200 Z" transform="translate(6 0)"/>
+          <rect x="592" y="356" width="16" height="6"/>
+          <path d="M584 214 L616 214 L612 196 L588 196 Z"/>
+          <ellipse cx="600" cy="182" rx="26" ry="16"/>
+          <rect x="596" y="120" width="8" height="52"/>
+          <path d="M598 120 L600 70 L602 120 Z"/>
+          <ellipse cx="600" cy="150" rx="10" ry="6"/>
+        </g>
+        <g class="sil-dark">
+          <rect x="380" y="180" width="90" height="180"/><path d="M380 180 L425 150 L470 180 Z"/>
+          <rect x="500" y="230" width="70" height="130"/>
+          <rect x="660" y="160" width="80" height="200"/><path d="M660 160 L700 140 L740 160 Z"/>
+          <rect x="960" y="190" width="85" height="170"/><path d="M960 190 L1002 172 L1045 190 Z"/>
+        </g>
+        <g>
+          <rect class="win" x="396" y="200" width="7" height="10"/><rect class="win" x="418" y="222" width="7" height="10"/>
+          <rect class="win" x="444" y="204" width="7" height="10"/><rect class="win" x="404" y="260" width="7" height="10"/>
+          <rect class="win" x="436" y="286" width="7" height="10"/><rect class="win" x="514" y="248" width="7" height="10"/>
+          <rect class="win" x="542" y="272" width="7" height="10"/><rect class="win" x="676" y="184" width="7" height="10"/>
+          <rect class="win" x="704" y="212" width="7" height="10"/><rect class="win" x="720" y="252" width="7" height="10"/>
+          <rect class="win" x="688" y="290" width="7" height="10"/><rect class="win" x="976" y="214" width="7" height="10"/>
+          <rect class="win" x="1006" y="240" width="7" height="10"/><rect class="win" x="1024" y="286" width="7" height="10"/>
+          <rect class="win" x="596" y="176" width="8" height="5"/>
+        </g>
+      </svg>
+    </div>
+    <div class="beat beat-low">
+      <h2 class="passage-lead" data-chars data-ch-lead="#ch-toronto"></h2>
+      <p class="passage p-left" data-fade data-ch-passage="#ch-toronto"></p>
+    </div>
+  </section>
+
+</div><!-- /#journey -->
+
+<!-- ═══════════ ABOUT ═══════════ -->
+<section class="panel about" id="about" aria-labelledby="aboutHeading">
+  <div class="about-grid">
+    <figure class="portrait" data-fade>
+      <img id="aboutPortrait" src="" alt="" loading="lazy" width="380" height="475" />
+    </figure>
+    <div>
+      <p class="ch-label" data-fade>About</p>
+      <h2 class="h-big" id="aboutHeading" data-chars></h2>
+      <div id="aboutParas"></div>
+      <div class="about-lists">
+        <div data-fade><h3>Interests</h3><ul id="aboutInterests"></ul></div>
+        <div data-fade><h3>Currently</h3><ul id="aboutCurrently"></ul></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ PHOTOGRAPHY ═══════════ -->
+<section class="panel gallery" id="photography" aria-labelledby="galleryHeading">
+  <div class="gallery-head">
+    <p class="ch-label" data-fade>Photography</p>
+    <h2 class="h-big" id="galleryHeading" data-chars></h2>
+    <p class="body" data-fade id="galleryIntro"></p>
+  </div>
+  <div class="filter-tabs" id="filterTabs" role="tablist" aria-label="Filter photos"></div>
+  <div class="masonry" id="masonry"></div>
+  <div class="load-more">
+    <button class="cta-circle" id="loadMore" style="display:none">
+      <span class="cc-row">
+        <span class="cc-label">Load more</span>
+        <span class="cc-ring"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v11M3.5 8.5L8 13l4.5-4.5"/></svg></span>
+      </span>
+      <span class="cc-line"></span>
+    </button>
+  </div>
+</section>
+
+</main>
+
+<!-- ═══════════ FOOTER / CONTACT ═══════════ -->
+<footer class="site-footer" id="footer" aria-label="Contact and site links">
+  <div class="footer-grid">
+    <div><nav class="f-nav" id="footerNav" aria-label="Footer navigation"></nav></div>
+    <div class="f-col">
+      <h3 id="fContactHead"></h3>
+      <p id="fContactBody"></p>
+      <div class="f-socials" id="fSocials"></div>
+    </div>
+    <div class="f-col">
+      <h3 id="fPlacesHead"></h3>
+      <p id="fPlacesBody"></p>
+    </div>
+  </div>
+  <div class="f-credits" id="fCredits" aria-label="Image credits"></div>
+  <div class="footer-bottom">
+    <div class="f-brand">
+      <span class="diamond" aria-hidden="true"><i></i></span>
+      <span class="f-word" id="footerBrand"></span>
+    </div>
+    <span class="f-copy" id="footerCopy"></span>
+  </div>
+</footer>
+
+<!-- lightbox -->
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Photo viewer">
+  <span class="lb-count" id="lbCount"></span>
+  <button class="lb-close" id="lbClose" aria-label="Close viewer">
+    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13"/></svg>
+  </button>
+  <button class="lb-btn lb-prev" id="lbPrev" aria-label="Previous photo">
+    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M10 2L4 8l6 6"/></svg>
+  </button>
+  <div class="lb-img-wrap"><img id="lbImg" src="" alt="" /></div>
+  <button class="lb-btn lb-next" id="lbNext" aria-label="Next photo">
+    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M6 2l6 6-6 6"/></svg>
+  </button>
+  <div class="lb-meta"><p class="t" id="lbTitle"></p><p class="l" id="lbLoc"></p></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+"use strict";
+
+/* ════════════════════════════════════════════════════════════
+   ✏️ CONFIG - SINGLE SOURCE OF TRUTH. Edit everything here.
+   Asset paths may be remote URLs (temporary CC0/PD placeholders)
+   or local /assets/... files.
+   ════════════════════════════════════════════════════════════ */
+var CONFIG = {
+  meta: { title: "The Journey, Himalayas to Toronto" },
+  brand: "The Journey",
+  preloaderWord: "JOURNEY",
+  preloaderSub: "Himalayas to Toronto",
+
+  /* ✏️ NAV - real destinations. To add a section (Projects, Resume…):
+     add { label, target } here + one CONFIG.sceneMap entry. */
+  nav: [
+    { label: "The Journey", target: "#journey" },
+    { label: "About",       target: "#about" },
+    { label: "Photography", target: "#photography" },
+    { label: "Contact",     target: "#footer" }
+  ],
+
+  heroLines: [ "From the", "Himalayas", "to the", "Horizon" ],
+  heroLine: "I was born where the earth touches the sky. Placeholder, replace me: under ridgelines older than memory, the mountains taught patience before anything else did.",
+  skipIntroText: "Skip intro",
+
+  /* ✏️ HERO LAYERS - parallax mountain stack (back → front).
+     src:"" uses the built-in generated art; set src to your own
+     transparent PNG (remote or /assets/...) to replace a layer.
+     depth: 0 = far/slow … 1 = near/fast. */
+  /* ✏️ HERO PHOTO - real base image (free Pexels license). Swap src for your own mountain shot. */
+  heroImage: {
+    src: "https://images.pexels.com/photos/6215182/pexels-photo-6215182.jpeg?auto=compress&cs=tinysrgb&w=1920",
+    alt: "Snow-covered Himalayan peak in Nepal"
+  },
+  /* dimensional hero rig (back → front): photo peak, drifting cloud
+     planes, a big mid billow, a dark foreground ridge, then live snow.
+     type:"cloud" = soft cloud plane (width/top in %); anything else =
+     generated ridge silhouette (tint/snow/bottom). depth drives both
+     scroll parallax and cursor response - 0 far … 1 near. */
+  heroLayers: [
+    { src: "", type: "cloud", depth: .20, opacity: .32, seed: 65, width: 74,  top: 12 },
+    { src: "", type: "cloud", depth: .34, opacity: .45, seed: 40, width: 64,  top: 28 },
+    { src: "", type: "cloud", depth: .50, opacity: .48, seed: 77, width: 110, top: 38 },
+    /* clouds hugging the peak's mid-height: wide, slow, a touch denser so the
+       summit reads as emerging from a moving cloud bank rather than sitting
+       on a flat static photo. */
+    { src: "", type: "cloud", depth: .58, opacity: .60, seed: 155, width: 150, top: 46 },
+    { src: "", type: "cloud", depth: .66, opacity: .60, seed: 130, width: 130, top: 58 },
+    { src: "", type: "cloud", depth: .88, opacity: .58, seed: 90, width: 90,  top: 54 },
+    { src: "", type: "ridge", depth: .94, opacity: .92, seed: 21, tint: "#0c141d", bottom: -4 }
+  ],
+  /* ✏️ SCENE PHOTOS: real cinematic backgrounds per journey chapter. Swap src for your own.
+     The flight photo lives inside the pan track markup, not here. */
+  scenePhotos: {
+    "#ch-durbar":  { src: "https://images.pexels.com/photos/37120692/pexels-photo-37120692.jpeg?auto=compress&cs=tinysrgb&w=1920", grade: "warm" },
+    "#ch-stupa":   { src: "assets/stupa-eyes.jpg", grade: "dawn", zoom: true },
+    "#ch-toronto": { src: "https://images.pexels.com/photos/2478248/pexels-photo-2478248.jpeg?auto=compress&cs=tinysrgb&w=1920", grade: "dusk" }
+  },
+
+  /* ✏️ CHAPTERS: label feeds the journey rail; lead is the chapter's one
+     spoken line; passages are short story fragments placed in the scene. */
+  chapters: [
+    { id: "#hero",       label: "The Himalayas" },
+    { id: "#ch-durbar",  label: "Kathmandu",
+      lead: "Courtyards of carved wood, bronze bells and morning smoke.",
+      passage: "Placeholder, replace me: the old royal square. Tiered pagoda roofs stacked toward the sky, pigeons scattering across brick, butter lamps drifting between temples that have stood for centuries." },
+    { id: "#ch-stupa",   label: "Swayambhunath",
+      lead: "The eyes on the hill watched over every one of my mornings." },
+    { id: "#ch-flight",  label: "The Flight",
+      lead: "One ticket. Two lives.",
+      passage: "Everything I owned fit in two bags. Everything I hoped for didn't fit anywhere yet." },
+    { id: "#ch-globe",   label: "Across the World",
+      lead: "Eleven thousand kilometres, carried in a single heartbeat." },
+    { id: "#ch-toronto", label: "Toronto",
+      lead: "A new skyline learned my name, one winter at a time.",
+      passage: "Placeholder, replace me: the tower on the lake instead of the peak above the valley. Different mountains, made of glass. The same person underneath, still climbing." }
+  ],
+
+  /* ✏️ ABOUT */
+  about: {
+    portrait: {
+      src: "https://images.pexels.com/photos/32132397/pexels-photo-32132397.jpeg?auto=compress&cs=tinysrgb&w=760", /* placeholder, replace with a photo of you */
+      alt: "Placeholder portrait, snowy mountain at night (replace with a photo of me)"
+    },
+    heading: "A student, somewhere between two hemispheres.",
+    paragraphs: [
+      "Placeholder, replace me: I'm a student in Toronto who grew up in Kathmandu. I build things: websites like this one, small tools, and whatever else refuses to leave my head until it exists.",
+      "Placeholder, replace me: this site is a passion project, a way of keeping the mountains, the temples and the flight that changed everything in one scrollable place."
+    ],
+    interests: [ "Photography", "Web design & motion", "Mountains & trekking", "Aviation", "Storytelling" ],
+    currently: [ "Studying (add your program here)", "Building this website", "Learning 3D on the web", "Part of (add your club/team)" ]
+  },
+
+  /* ✏️ PHOTOGRAPHY - grows to 50+ fine; grid paginates.
+     Every entry: src (URL or /assets/...), alt, caption, location, date, tags[], w/h for layout. */
+  galleryHeading: "Fragments of the way here.",
+  galleryIntro: "Placeholder, replace me: photographs from both lives: the ridges and courtyards I come from, and the city I'm still learning.",
+  photoPageSize: 9,
+  photos: [
+    { src: "https://images.pexels.com/photos/6215182/pexels-photo-6215182.jpeg?auto=compress&cs=tinysrgb&w=1000", alt: "Snow-covered Himalayan peak in Nepal", caption: "Above the cloud line", location: "Himalayas, Nepal", date: "2021", tags: ["Nepal","Mountains"], w: 1000, h: 667 },
+    { src: "https://images.pexels.com/photos/32132397/pexels-photo-32132397.jpeg?auto=compress&cs=tinysrgb&w=1000", alt: "Himalayan mountains with prayer flags", caption: "Wind horses", location: "Nepal", date: "2021", tags: ["Nepal","Mountains"], w: 1000, h: 1250 },
+    { src: "https://images.pexels.com/photos/30400910/pexels-photo-30400910.jpeg?auto=compress&cs=tinysrgb&w=1000", alt: "Himalayan mountain with prayer flags", caption: "Blessings on the ridge", location: "Nepal", date: "2020", tags: ["Nepal","Mountains"], w: 1000, h: 667 },
+    { src: "https://images.pexels.com/photos/37120692/pexels-photo-37120692.jpeg?auto=compress&cs=tinysrgb&w=1000", alt: "Historic pagoda temple in Kathmandu", caption: "Temple morning", location: "Kathmandu, Nepal", date: "2021", tags: ["Nepal"], w: 1000, h: 1500 },
+    { src: "assets/stupa-eyes-gallery.jpg", alt: "Swayambhunath stupa painted eyes with prayer flags", caption: "The eyes on the hill", location: "Kathmandu, Nepal", date: "2021", tags: ["Nepal"], w: 1000, h: 1500 },
+    { src: "assets/flight-wing-sunset-gallery.jpg", alt: "Airplane wing above clouds at sunset", caption: "Seat 32A", location: "Somewhere over Asia", date: "2022", tags: ["Flight"], w: 1000, h: 1333 },
+    { src: "https://images.pexels.com/photos/12720523/pexels-photo-12720523.jpeg?auto=compress&cs=tinysrgb&w=1000", alt: "Airplane wing and clouds from a window", caption: "Between two homes", location: "In transit", date: "2022", tags: ["Flight"], w: 1000, h: 1500 },
+    { src: "https://images.pexels.com/photos/15784288/pexels-photo-15784288.jpeg?auto=compress&cs=tinysrgb&w=1000", alt: "Toronto skyline with CN Tower at sunset", caption: "New coordinates", location: "Toronto, Canada", date: "2023", tags: ["Toronto"], w: 1000, h: 667 },
+    { src: "https://images.pexels.com/photos/2478248/pexels-photo-2478248.jpeg?auto=compress&cs=tinysrgb&w=1000", alt: "Toronto cityscape at night", caption: "Glass mountains", location: "Toronto, Canada", date: "2024", tags: ["Toronto"], w: 1000, h: 1500 },
+    { src: "https://images.pexels.com/photos/374870/pexels-photo-374870.jpeg?auto=compress&cs=tinysrgb&w=1000", alt: "CN Tower in Toronto", caption: "The tower on the lake", location: "Toronto, Canada", date: "2024", tags: ["Toronto"], w: 1000, h: 1500 }
+  ],
+
+  /* ✏️ GLOBE - real 3D earth. lat/lon in degrees. */
+  globe: {
+    textures: [
+      "https://unpkg.com/three-globe@2.31.0/example/img/earth-night.jpg",
+      "https://unpkg.com/three-globe@2.31.0/example/img/earth-dark.jpg",
+      "https://unpkg.com/three-globe@2.31.0/example/img/earth-blue-marble.jpg"
+    ],
+    origin:   { label: "Kathmandu", lat: 27.7172, lon: 85.3240 },
+    dest:     { label: "Toronto",   lat: 43.6532, lon: -79.3832 },
+    waypoints:[ { label: "Doha", lat: 25.28, lon: 51.53 }, { label: "London", lat: 51.5, lon: -0.12 } ],
+    caption: "Kathmandu 27.7°N 85.3°E to Toronto 43.7°N 79.4°W"
+  },
+
+  /* ✏️ CONTACT (footer). A form needs a 3rd-party service (e.g. Formspree) - mailto is real. */
+  contact: {
+    heading: "Say hello",
+    body: "The inbox is always open: for projects, photography, or just to talk about mountains.",
+    email: "maneetedu@gmail.com",
+    socials: [
+      { label: "Instagram", url: "https://instagram.com/yourhandle" },
+      { label: "GitHub",    url: "https://github.com/yourhandle" },
+      { label: "LinkedIn",  url: "https://linkedin.com/in/yourhandle" }
+    ],
+    placesHeading: "Two homes",
+    placesBody: "Kathmandu, Nepal - 27.7°N 85.3°E\nToronto, Canada - 43.7°N 79.4°W"
+  },
+  menuFootLeft: "Kathmandu → Toronto",
+  menuFootRight: "© 2026, a personal story",
+  footerCopy: "© 2026 The Journey. Edit me and make it yours.",
+  /* ✏️ IMAGE CREDITS - attribution for photos used. Add/replace as you swap images. */
+  creditsHeading: "Image credits",
+  credits: [
+    { label: "Hero & gallery: Himalayan peak", author: "Balaji Srinivasan", source: "Pexels", url: "https://www.pexels.com/photo/6215182/" },
+    { label: "Kathmandu: pagoda temple", author: "Sushant Bista", source: "Pexels", url: "https://www.pexels.com/photo/37120692/" },
+    { label: "Swayambhunath: painted eyes", author: "Mr Dr3igeteilt", source: "Pexels", url: "https://www.pexels.com/photo/36564642/" },
+    { label: "The Flight: wing at sunset", author: "Sonia Kosyakova", source: "Pexels", url: "https://www.pexels.com/photo/14482714/" },
+    { label: "The Flight: wing & clouds", author: "Alex P", source: "Pexels", url: "https://www.pexels.com/photo/12720523/" },
+    { label: "Toronto: skyline & CN Tower", author: "Pexels contributors", source: "Pexels", url: "https://www.pexels.com/search/toronto%20skyline/" },
+    { label: "Prayer flags: Himalayas", author: "Pexels contributors", source: "Pexels", url: "https://www.pexels.com/search/prayer%20flags%20nepal/" },
+    { label: "Earth texture", author: "NASA / three-globe", source: "Public domain", url: "https://visibleearth.nasa.gov/" }
+  ],
+
+  /* ✏️ SCENE PALETTES (rgb 0..1) + which scroll positions use them.
+     wisp: 1 = thin high cirrus … 0 = big soft billows (cloud character).
+     stars: 0..1 star-field strength (space band, faint city night). */
+  scenes: {
+    himalaya: { sky:[.66,.72,.78], deep:[.30,.38,.46], hi:[.93,.95,.97], sun:.55, rays:0,   dense:1.1, snow:1,  wisp:.85, stars:0   },
+    temples:  { sky:[.72,.66,.58], deep:[.36,.31,.28], hi:[.97,.88,.72], sun:.55, rays:.15, dense:.95, snow:0,  wisp:.55, stars:0   },
+    golden:   { sky:[.80,.68,.50], deep:[.42,.32,.24], hi:[1,.92,.66],   sun:.85, rays:.4,  dense:.9,  snow:0,  wisp:.5,  stars:0   },
+    flight:   { sky:[.70,.79,.88], deep:[.42,.56,.70], hi:[.98,.99,1],   sun:.6,  rays:0,   dense:.85, snow:0,  wisp:.1,  stars:0   },
+    /* real dark void, not a lit grey-blue cloud bank: the fbm mix formula
+       leans toward `sky` for most of the frame, so `sky` itself has to be
+       genuinely dark for the globe band to read as space rather than fog.
+       sun off - no atmosphere glow this far from the ground scenes. */
+    space:    { sky:[.05,.07,.12], deep:[.01,.02,.045], hi:[.72,.82,.92], sun:0,   rays:0,   dense:.04, snow:0,  wisp:0,   stars:1   },
+    dusk:     { sky:[.44,.40,.55], deep:[.11,.12,.22], hi:[.98,.76,.52], sun:.4,  rays:0,   dense:.8,  snow:.55, wisp:.35, stars:.1  },
+    slate:    { sky:[.42,.50,.56], deep:[.14,.19,.24], hi:[.85,.9,.92],  sun:.25, rays:.1,  dense:.7,  snow:0,  wisp:.45, stars:0   },
+    night:    { sky:[.30,.36,.46], deep:[.08,.11,.17], hi:[.8,.85,.9],   sun:.15, rays:0,   dense:.6,  snow:0,  wisp:.3,  stars:.22 },
+    fade:     { sky:[.60,.58,.66], deep:[.26,.27,.36], hi:[.98,.86,.68], sun:.4,  rays:0,   dense:.7,  snow:0,  wisp:.5,  stars:0   }
+  },
+  sceneMap: [
+    { sel: null,           scene: "himalaya", y: 0 },
+    { sel: "#ch-durbar",   scene: "himalaya", at: "top", ofsVh: -0.9 },
+    { sel: "#ch-durbar",   scene: "temples",  at: "top", ofsVh: -0.1 },
+    { sel: "#ch-stupa",    scene: "temples",  at: "top", ofsVh: -0.6 },
+    { sel: "#ch-stupa",    scene: "golden",   at: "top", ofsVh: 0 },
+    { sel: "#ch-flight",   scene: "golden",   at: "top", ofsVh: -0.7 },
+    { sel: "#ch-flight",   scene: "flight",   at: "top", ofsVh: 0 },
+    { sel: "#globeStage",  scene: "flight",   at: "top", ofsVh: -0.9 },
+    { sel: "#globeStage",  scene: "space",    at: "top", ofsVh: -0.05 },
+    { sel: "#ch-toronto",  scene: "space",    at: "top", ofsVh: -0.9 },
+    { sel: "#ch-toronto",  scene: "dusk",     at: "top", ofsVh: -0.1 },
+    { sel: "#about",       scene: "slate",    at: "top", ofsVh: -0.5 },
+    { sel: "#photography", scene: "night",    at: "top", ofsVh: -0.5 },
+    { sel: "#footer",      scene: "fade",     at: "top", ofsVh: -1 }
+  ]
+};
+/* ═══════════════════════ end CONFIG ═══════════════════════ */
+
+var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+var isLite = window.matchMedia("(max-width:820px)").matches ||
+             (navigator.deviceMemory && navigator.deviceMemory <= 4);
+var hasGSAP = !!(window.gsap && window.ScrollTrigger);
+if(hasGSAP) gsap.registerPlugin(ScrollTrigger);
+
+/* ---------- tiny utils ---------- */
+function $(s){ return document.querySelector(s); }
+function $$(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); }
+function mulberry(seed){ return function(){ seed|=0; seed=seed+0x6D2B79F5|0; var t=Math.imul(seed^seed>>>15,1|seed); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+function el(tag, cls, html){ var e=document.createElement(tag); if(cls)e.className=cls; if(html!=null)e.innerHTML=html; return e; }
+/* generated fallback image (soft gradient) - last resort for any broken photo */
+function genPlaceholder(w,h,c1,c2){
+  var c=document.createElement("canvas");c.width=w||80;c.height=h||100;
+  var x=c.getContext("2d");var g=x.createLinearGradient(0,0,w,h);
+  g.addColorStop(0,c1||"#3d5163");g.addColorStop(1,c2||"#22303c");
+  x.fillStyle=g;x.fillRect(0,0,w,h);return c.toDataURL("image/png");
+}
+
+/* ---------- generated hero art (used when layer.src === "") ---------- */
+function genMountainURI(seed, tint, snowAmt){
+  var rnd=mulberry(seed), W=1600, H=560, pts=[], x, y=H*(0.42+rnd()*0.18);
+  var peaks=[]; for(var p=0;p<4+Math.floor(rnd()*3);p++) peaks.push({x:W*rnd(),w:120+rnd()*260,h:90+rnd()*180});
+  for(x=0;x<=W;x+=16){
+    y+= (rnd()-0.5)*26; y=Math.max(H*0.2,Math.min(H*0.72,y));
+    var yy=y;
+    peaks.forEach(function(pk){ var d=Math.abs(x-pk.x); if(d<pk.w) yy-=pk.h*(1-d/pk.w)*(0.7+0.3*Math.sin(d*.05)); });
+    pts.push([x,Math.max(H*0.08,yy)]);
+  }
+  var ridge=pts.map(function(p){return p[0]+","+p[1].toFixed(1);}).join(" ");
+  var svg="<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 "+W+" "+H+"'>";
+  svg+="<polygon fill='"+tint+"' points='0,"+H+" "+ridge+" "+W+","+H+"'/>";
+  if(snowAmt>0){
+    var snow="";
+    for(var i=0;i<pts.length;i++){var pt=pts[i]; if(pt[1]<H*0.5) snow+=pt[0]+","+pt[1].toFixed(1)+" ";}
+    if(snow){
+      var down=[]; for(var j=pts.length-1;j>=0;j--){var q=pts[j]; if(q[1]<H*0.5) down.push(q[0]+","+(q[1]+20+rnd()*26).toFixed(1));}
+      svg+="<polygon fill='rgba(245,250,252,"+(0.75*snowAmt)+")' points='"+snow+down.join(" ")+"'/>";
+    }
+  }
+  svg+="</svg>";
+  return "data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg);
+}
+/* smooth low-profile foreground ridge (hero rig) - sum-of-sines, no jitter */
+function genRidgeURI(seed, tint){
+  var rnd=mulberry(seed), W=1600, H=420;
+  var ph1=rnd()*6.28, ph2=rnd()*6.28, ph3=rnd()*6.28, pts=[];
+  for(var x=0;x<=W;x+=8){
+    var t=x/W;
+    var y=H*.52
+      - Math.sin(t*4.2+ph1)*H*.16
+      - Math.sin(t*9.1+ph2)*H*.07
+      - Math.sin(t*17.3+ph3)*H*.03;
+    pts.push(x+","+y.toFixed(1));
+  }
+  var svg="<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 "+W+" "+H+"'>"+
+    "<polygon fill='"+tint+"' points='0,"+H+" "+pts.join(" ")+" "+W+","+H+"'/></svg>";
+  return "data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg);
+}
+function genCloudURI(seed){
+  var rnd=mulberry(seed), c=document.createElement("canvas");c.width=900;c.height=300;
+  var x=c.getContext("2d");
+  for(var i=0;i<46;i++){
+    var cx=80+rnd()*740, cy=90+rnd()*120, r=30+rnd()*90;
+    var g=x.createRadialGradient(cx,cy,0,cx,cy,r);
+    g.addColorStop(0,"rgba(255,255,255,"+(0.05+rnd()*0.08)+")");g.addColorStop(1,"rgba(255,255,255,0)");
+    x.fillStyle=g;x.beginPath();x.arc(cx,cy,r,0,7);x.fill();
+  }
+  return c.toDataURL("image/png");
+}
+
+/* ---------- inject CONFIG into the DOM ---------- */
+(function inject(){
+  $("#brandName").textContent=CONFIG.brand;
+  $("#footerBrand").textContent=CONFIG.brand;
+  $("#footerCopy").textContent=CONFIG.footerCopy;
+  $("#menuFootLeft").textContent=CONFIG.menuFootLeft;
+  $("#menuFootRight").textContent=CONFIG.menuFootRight;
+  $("#plSub").textContent=CONFIG.preloaderSub;
+  $("#skipIntro").textContent=CONFIG.skipIntroText;
+  $("#globeCaption").textContent=CONFIG.globe.caption;
+  $("#heroLine").textContent=CONFIG.heroLine||"";
+  CONFIG.preloaderWord.split("").forEach(function(c){$("#plWord").appendChild(el("span",null,c));});
+  CONFIG.heroLines.forEach(function(line,i){
+    var s=el("span","hs-line"+(i%2===1?"":" dim"));s.textContent=line;$("#heroStack").appendChild(s);
+  });
+  /* nav (header + menu overlay + footer) */
+  CONFIG.nav.forEach(function(n,i){
+    var a=el("a");a.href=n.target;a.setAttribute("data-scrollto",n.target);a.textContent=n.label;
+    $("#mainNav").appendChild(a);
+    var m=el("a","menu-link");m.href=n.target;m.setAttribute("data-scrollto",n.target);
+    m.innerHTML="<span class='ml-num'>0"+(i+1)+"</span><span class='ml-text'></span>";
+    m.querySelector(".ml-text").textContent=n.label;
+    $("#menuNav").appendChild(m);
+    var f=a.cloneNode(true);$("#footerNav").appendChild(f);
+  });
+  /* chapter leads + passages + journey rail */
+  CONFIG.chapters.forEach(function(ch){
+    var lead=document.querySelector("[data-ch-lead='"+ch.id+"']");
+    if(lead&&ch.lead) lead.textContent=ch.lead;
+    var pas=document.querySelector("[data-ch-passage='"+ch.id+"']");
+    if(pas&&ch.passage) pas.textContent=ch.passage;
+    var d=el("button","jdot");d.setAttribute("aria-label",ch.label);
+    d.innerHTML="<i></i><span></span>";
+    d.querySelector("span").textContent=ch.label;
+    d.setAttribute("data-scrollto",ch.id);
+    $("#journeyDots").appendChild(d);
+  });
+  /* about */
+  var A=CONFIG.about;
+  $("#aboutHeading").textContent=A.heading;
+  var port=$("#aboutPortrait");port.alt=A.portrait.alt;port.src=A.portrait.src;
+  port.onerror=function(){ this.onerror=null; this.src=genPlaceholder(380,475,"#4a6070","#26333d"); };
+  A.paragraphs.forEach(function(p){var e=el("p","body",null);e.setAttribute("data-fade","");e.textContent=p;$("#aboutParas").appendChild(e);});
+  A.interests.forEach(function(t){var li=el("li");li.textContent=t;$("#aboutInterests").appendChild(li);});
+  A.currently.forEach(function(t){var li=el("li");li.textContent=t;$("#aboutCurrently").appendChild(li);});
+  /* gallery head */
+  $("#galleryHeading").textContent=CONFIG.galleryHeading;
+  $("#galleryIntro").textContent=CONFIG.galleryIntro;
+  /* footer contact */
+  $("#fContactHead").textContent=CONFIG.contact.heading;
+  $("#fContactBody").innerHTML="";
+  var cb=$("#fContactBody");cb.appendChild(document.createTextNode(CONFIG.contact.body+" "));
+  cb.appendChild(el("br"));
+  var mail=el("a");mail.href="mailto:"+CONFIG.contact.email;mail.textContent=CONFIG.contact.email;cb.appendChild(mail);
+  CONFIG.contact.socials.forEach(function(s){
+    var a=el("a");a.href=s.url;a.target="_blank";a.rel="noopener";a.textContent=s.label+" ↗";$("#fSocials").appendChild(a);
+  });
+  $("#fPlacesHead").textContent=CONFIG.contact.placesHeading;
+  $("#fPlacesBody").innerHTML=CONFIG.contact.placesBody.split("\n").map(function(l){return l;}).join("<br/>");
+  if(CONFIG.credits&&CONFIG.credits.length){
+    var fc=$("#fCredits");
+    if(fc){
+      fc.appendChild(el("h4",null,CONFIG.creditsHeading||"Image credits"));
+      var ul=el("ul");
+      CONFIG.credits.forEach(function(c){
+        var li=el("li");li.innerHTML="<span>"+c.label+", </span>"+c.author+", ";
+        var a=el("a");a.href=c.url;a.target="_blank";a.rel="noopener";a.textContent=c.source;li.appendChild(a);
+        ul.appendChild(li);
+      });
+      fc.appendChild(ul);
+    }
+  }
+})();
+
+/* ---------- hero parallax layers ---------- */
+(function heroLayers(){
+  var wrap=$("#heroVisual");
+  if(CONFIG.heroImage&&CONFIG.heroImage.src){
+    var base=el("img","hero-base");base.src=CONFIG.heroImage.src;base.alt="";base.setAttribute("aria-hidden","true");
+    base.onerror=function(){this.style.display="none";};
+    /* small independent depth so the mountain photo itself drifts a little
+       beyond the whole-rig tilt below - the peak should feel touched by the
+       cursor, not just the cloud layers floating in front of it. */
+    base.setAttribute("data-depth",".08");
+    wrap.appendChild(base);
+  }
+  CONFIG.heroLayers.forEach(function(L,i){
+    var holder;
+    if(L.type==="cloud"){
+      holder=el("img","hcloud");
+      holder.style.width=(L.width||70)+"%";holder.style.top=(L.top||30)+"%";
+      holder.style.left=(10+((i*23)%40))+"%";holder.style.opacity=L.opacity;
+      holder.alt="";holder.setAttribute("aria-hidden","true");
+      holder.src=L.src||genCloudURI(L.seed||i);
+      holder.onerror=function(){this.onerror=null;this.src=genCloudURI(L.seed||i);};
+    }else{
+      holder=el("div","hlayer");
+      holder.style.bottom=(L.bottom||0)+"%";holder.style.opacity=L.opacity;
+      var img=el("img");img.alt="";img.setAttribute("aria-hidden","true");
+      img.style.height="auto";
+      var gen=(L.type==="ridge")?function(){return genRidgeURI(L.seed||i,L.tint||"#0c141d");}
+                                :function(){return genMountainURI(L.seed||i,L.tint||"#5a7183",L.snow||0);};
+      img.src=L.src||gen();
+      img.onerror=function(){this.onerror=null;this.src=gen();};
+      holder.appendChild(img);
+    }
+    holder.setAttribute("data-depth",L.depth);
+    wrap.appendChild(holder);
+    if(hasGSAP&&!reduceMotion){
+      /* parallax: far slow, near fast */
+      gsap.to(holder,{yPercent:-8-L.depth*46,ease:"none",
+        scrollTrigger:{trigger:"#hero",start:"top top",end:"bottom top",scrub:true}});
+      if(L.type==="cloud"){
+        gsap.to(holder,{xPercent:(i%2?12:-12),duration:26+i*7,yoyo:true,repeat:-1,ease:"sine.inOut"});
+      }
+    }
+  });
+  if(hasGSAP&&!reduceMotion){
+    gsap.fromTo(wrap,{scale:1},{scale:1.08,ease:"none",
+      scrollTrigger:{trigger:"#hero",start:"top top",end:"bottom top",scrub:true}});
+  }
+})();
+
+/* ---------- cinematic real-photo scene backgrounds ---------- */
+(function scenePhotos(){
+  var map=CONFIG.scenePhotos||{};
+  Object.keys(map).forEach(function(sel){
+    var sec=$(sel); if(!sec) return;
+    var cfg=map[sel]; if(!cfg||!cfg.src) return;
+    var bg=el("div","scene-bg"); bg.setAttribute("data-grade",cfg.grade||"warm"); bg.setAttribute("aria-hidden","true");
+    var img=el("img"); img.src=cfg.src; img.alt=""; img.loading="lazy"; img.decoding="async";
+    img.onerror=function(){bg.style.display="none";sec.classList.remove("has-photo");};
+    bg.appendChild(img); sec.insertBefore(bg,sec.firstChild); sec.classList.add("has-photo");
+    /* the stupa image is owned by the pinned zoom device; no drift parallax there */
+    if(hasGSAP&&!reduceMotion&&!cfg.zoom){
+      gsap.fromTo(img,{yPercent:-12,scale:1.14},{yPercent:12,scale:1.02,ease:"none",
+        scrollTrigger:{trigger:sec,start:"top bottom",end:"bottom top",scrub:true}});
+    }
+  });
+})();
+
+/* ---------- continuous cloud atmosphere: drifts across every scene + mouse-reactive ---------- */
+var pointer={x:.5,y:.5,tx:.5,ty:.5};
+window.addEventListener("mousemove",function(e){pointer.tx=e.clientX/innerWidth;pointer.ty=e.clientY/innerHeight;},{passive:true});
+(function atmosphere(){
+  var wrap=$("#atmosphere"); if(!wrap) return;
+  var defs=[{y:4,d:.02,o:.18,amp:3,spd:.05,ph:0},{y:30,d:.05,o:.13,amp:5,spd:.08,ph:2.1},
+            {y:56,d:.033,o:.16,amp:4,spd:.06,ph:4.2},{y:80,d:.066,o:.11,amp:6,spd:.11,ph:1.3}];
+  var layers=defs.map(function(D,i){
+    var img=el("img"); img.src=genCloudURI(200+i*17); img.alt="";
+    img.style.top=D.y+"%"; img.style.opacity=D.o; wrap.appendChild(img);
+    D.img=img; return D;
+  });
+  if(reduceMotion) return;
+  var t0=performance.now(), fogK=1;
+  (function tick(now){
+    pointer.x+=(pointer.tx-pointer.x)*.05; pointer.y+=(pointer.ty-pointer.y)*.05;
+    var mx=pointer.x-.5, my=pointer.y-.5, t=(now-t0)/1000;
+    /* the continuous fog belongs to the mountains/city/flight, not to deep
+       space: scale its presence by the current scene's cloud density so the
+       globe/space band reads as a real dark void instead of staying fogged
+       over at the same intensity as the Himalaya chapter. */
+    /* guard: this first tick fires synchronously, before sceneTrack (built
+       further down the script) exists yet - default to full fog until it does */
+    var sc=(typeof sceneTrack!=="undefined"&&sceneTrack.length)?sampleScene(window.scrollY):null;
+    var targetK=sc?Math.max(0,Math.min(1,sc.dense!=null?sc.dense:1)):1;
+    fogK+=(targetK-fogK)*.04;
+    layers.forEach(function(L){
+      var dx=Math.sin(t*L.spd+L.ph)*L.amp - mx*L.d*120;
+      var dy=-my*L.d*70;
+      L.img.style.transform="translate3d("+dx+"%,"+dy+"%,0)";
+      L.img.style.opacity=(L.o*fogK).toFixed(3);
+    });
+    requestAnimationFrame(tick);
+  })(t0);
+})();
+
+/* ---------- hero cursor parallax: mountain/cloud layers tilt toward the pointer ---------- */
+(function heroPointerParallax(){
+  if(!hasGSAP||reduceMotion) return;
+  var hero=$("#hero"),wrap=$("#heroVisual");
+  var layers=$$("#heroVisual [data-depth]");
+  if(!hero||!wrap||!layers.length) return;
+  gsap.ticker.add(function(){
+    var r=hero.getBoundingClientRect();
+    if(r.bottom<0||r.top>innerHeight)return;
+    var mx=pointer.x-.5,my=pointer.y-.5;
+    layers.forEach(function(L){
+      var depth=parseFloat(L.getAttribute("data-depth"))||0;
+      gsap.set(L,{x:-mx*42*depth,y:-my*24*depth});
+    });
+    /* camera-head tilt: the whole rig leans toward the cursor */
+    gsap.set(wrap,{x:-mx*20,y:-my*11,rotationY:mx*5,rotationX:-my*3.6,transformPerspective:1100});
+  });
+})();
+
+/* ---------- scene pointer parallax: silhouettes + real-photo scenes drift
+   gently with the cursor too, so the whole journey feels touched by you,
+   not just the hero. Small magnitude, additive to the existing scroll-scrub
+   tweens (different transform props, so they don't fight each other). ---------- */
+(function scenePointerParallax(){
+  if(!hasGSAP||reduceMotion||isLite) return;
+  var sils=$$(".silhouette");
+  /* exclude the stupa image: it owns a dedicated pinned pull-back zoom and
+     shouldn't fight that deliberate camera move with cursor drift */
+  var photos=$$(".scene-bg img").filter(function(im){ return !im.closest("#ch-stupa"); });
+  if(!sils.length&&!photos.length) return;
+  gsap.ticker.add(function(){
+    var mx=pointer.x-.5, my=pointer.y-.5;
+    sils.forEach(function(s){ gsap.set(s,{x:-mx*18,rotation:mx*0.6,transformOrigin:"50% 100%"}); });
+    photos.forEach(function(p){ gsap.set(p,{x:-mx*12,y:-my*8}); });
+  });
+})();
+
+/* ---------- smooth scroll + routing ---------- */
+var lenis=null;
+if(window.Lenis&&hasGSAP&&!reduceMotion){
+  lenis=new Lenis({duration:1.4,easing:function(t){return Math.min(1,1.001-Math.pow(2,-10*t));}});
+  lenis.on("scroll",ScrollTrigger.update);
+  gsap.ticker.add(function(t){lenis.raf(t*1000);});
+  gsap.ticker.lagSmoothing(0);
+}
+function scrollToTarget(sel,instant){
+  var target=$(sel);if(!target)return;
+  if(lenis)lenis.scrollTo(target,{duration:instant?0:1.8,immediate:!!instant});
+  else if(instant)target.scrollIntoView();
+  else target.scrollIntoView({behavior:"smooth"});
+}
+function bindScrollLinks(root){
+  (root||document).querySelectorAll("[data-scrollto]").forEach(function(a){
+    if(a.__bound)return;a.__bound=true;
+    a.addEventListener("click",function(e){
+      e.preventDefault();
+      if(document.body.classList.contains("menu-open"))closeMenu();
+      var t=a.getAttribute("data-scrollto");
+      scrollToTarget(t);
+      try{history.pushState(null,"",t);}catch(err){}
+    });
+  });
+}
+bindScrollLinks();
+window.addEventListener("popstate",function(){
+  var h=location.hash||"#journey";
+  if($(h))scrollToTarget(h);
+});
+
+if(!hasGSAP){
+  /* graceful static page: remove preloader, show everything */
+  document.documentElement.classList.add("no-motion","no-webgl");
+  var pl0=$("#preloader");if(pl0)pl0.remove();
+}
+
+/* ---------- atmosphere: WebGL on desktop, CSS gradient on lite ---------- */
+var atmosphere=null;
+if(!isLite){
+  atmosphere=(function(){
+    var cv=$("#sky");var gl=cv.getContext("webgl",{antialias:false,depth:false});
+    if(!gl){document.documentElement.classList.add("no-webgl");return null;}
+    var VERT="attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}";
+    var FRAG=[
+    "precision highp float;",
+    "uniform vec2 u_res;uniform float u_time;uniform float u_scroll;",
+    "uniform vec3 u_sky;uniform vec3 u_deep;uniform vec3 u_hi;",
+    "uniform float u_sun;uniform float u_rays;uniform float u_dense;",
+    "uniform float u_wisp;uniform float u_stars;",
+    "float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453123);}",
+    "float noise(vec2 p){vec2 i=floor(p);vec2 f=fract(p);f=f*f*(3.-2.*f);",
+    " return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+vec2(1.,1.)),f.x),f.y);}",
+    "float fbm(vec2 p){float v=0.;float a=.5;",
+    " for(int i=0;i<5;i++){v+=a*noise(p);p=p*2.03+vec2(1.7,9.2);a*=.55;}return v;}",
+    "void main(){",
+    " vec2 uv=gl_FragCoord.xy/u_res;vec2 p=uv;p.x*=u_res.x/u_res.y;",
+    " float t=u_time*.018;",
+    /* cloud character morphs with altitude: wisp 1 = stretched thin cirrus,
+       wisp 0 = big soft billows filling the frame */
+    " float freq=mix(1.15,2.05,u_wisp);",
+    " vec2 aniso=vec2(1.,1.+u_wisp*.9);",
+    " vec2 q=vec2(fbm(p*1.7+vec2(t*2.,0.)),fbm(p*1.7+vec2(5.2,1.3)-t));",
+    " float f=fbm(p*freq*aniso+2.2*q+vec2(-t*3.,t*.8));",
+    " vec3 col=mix(u_deep,u_sky,clamp(f*f*1.9+.15,0.,1.));",
+    " col=mix(col,u_hi,clamp(pow(f,3.)*.9*u_dense,0.,1.)*.55);",
+    " vec2 pNear=p*mix(2.2,3.3,u_wisp)+vec2(u_scroll*.55-t*2.6,u_scroll*.12+t*.6);",
+    " float fNear=fbm(pNear);",
+    " float nearMask=smoothstep(.42,.92,fNear)*(1.-uv.y*.55)*clamp(u_dense,0.,1.);",
+    " col=mix(col,u_hi,nearMask*mix(.42,.2,u_wisp));",
+    " col=mix(col,u_deep,(1.-nearMask)*.05*(1.-f));",
+    /* star field: soft dots in a hash grid, hidden behind cloud, twinkling */
+    " if(u_stars>.003){",
+    "  vec2 sc=gl_FragCoord.xy/u_res.y*130.;",
+    "  vec2 cell=floor(sc);vec2 g=fract(sc)-.5;",
+    "  float h=hash(cell);",
+    "  float lit=smoothstep(.986,.998,h);",
+    "  float dot_=smoothstep(.42,.02,length(g));",
+    "  float tw=.55+.45*sin(u_time*2.2+h*47.);",
+    "  col+=vec3(.92,.95,1.)*lit*dot_*tw*u_stars*(1.-clamp(f*1.5,0.,1.));",
+    " }",
+    " col+=u_hi*u_sun*pow(max(0.,1.-distance(uv,vec2(.5,1.12))),3.)*.9;",
+    " if(u_rays>.003){",
+    "  float ang=atan(p.x-.72*u_res.x/u_res.y,1.55-uv.y);",
+    "  float rays=pow(max(0.,sin(ang*11.+t*9.)*.5+.5),3.5)*max(0.,1.-uv.y*1.05);",
+    "  col+=u_hi*rays*u_rays*.3*(.4+.6*fbm(p*2.5+t*2.));",
+    " }",
+    " col*=1.-.3*pow(distance(uv,vec2(.5,.42)),1.9);",
+    " gl_FragColor=vec4(col-hash(gl_FragCoord.xy+fract(u_time)*7.)*.03,1.);",
+    "}"].join("\n");
+    function sh(type,src){var s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);
+      if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw 0;return s;}
+    var prog;
+    try{prog=gl.createProgram();prog&&gl.attachShader(prog,sh(gl.VERTEX_SHADER,VERT));
+      gl.attachShader(prog,sh(gl.FRAGMENT_SHADER,FRAG));gl.linkProgram(prog);
+      if(!gl.getProgramParameter(prog,gl.LINK_STATUS))throw 0;
+    }catch(e){document.documentElement.classList.add("no-webgl");return null;}
+    gl.useProgram(prog);
+    var buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+    var loc=gl.getAttribLocation(prog,"a");gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+    var U={};["u_res","u_time","u_scroll","u_sky","u_deep","u_hi","u_sun","u_rays","u_dense","u_wisp","u_stars"]
+      .forEach(function(n){U[n]=gl.getUniformLocation(prog,n);});
+    function size(){var dpr=Math.min(window.devicePixelRatio||1,1.25);
+      cv.width=Math.floor(innerWidth*dpr*.8);cv.height=Math.floor(innerHeight*dpr*.8);
+      gl.viewport(0,0,cv.width,cv.height);}
+    size();window.addEventListener("resize",size);
+    return {gl:gl,U:U,cv:cv};
+  })();
+}else{
+  document.documentElement.classList.add("no-webgl");
+}
+
+/* scene sampling (shared by shader, gradient fallback, particles) */
+var sceneTrack=[];
+/* layout-based doc position: stable even while an element is pinned
+   (getBoundingClientRect lies mid-pin; offsetTop chain does not) */
+function docTop(elx){var y=0;while(elx){y+=elx.offsetTop;elx=elx.offsetParent;}return y;}
+function buildSceneTrack(){
+  var vh=innerHeight;
+  sceneTrack=CONFIG.sceneMap.map(function(m){
+    var y=m.y||0;
+    if(m.sel){var elx=$(m.sel);
+      if(elx){var top=docTop(elx);
+        y=(m.at==="bottom"?top+elx.offsetHeight:top)+(m.ofsVh||0)*vh;}}
+    return {y:y,s:CONFIG.scenes[m.scene]};
+  }).sort(function(a,b){return a.y-b.y;});
+}
+function lerp(a,b,t){return a+(b-a)*t;}
+function lerp3(a,b,t){return [lerp(a[0],b[0],t),lerp(a[1],b[1],t),lerp(a[2],b[2],t)];}
+var SKEYS=["sun","rays","dense","snow","wisp","stars"];
+function sampleScene(y){
+  if(!sceneTrack.length)return CONFIG.scenes.himalaya;
+  if(y<=sceneTrack[0].y)return sceneTrack[0].s;
+  for(var i=0;i<sceneTrack.length-1;i++){
+    var a=sceneTrack[i],b=sceneTrack[i+1];
+    if(y>=a.y&&y<b.y){
+      var t=(y-a.y)/Math.max(1,b.y-a.y);t=t*t*(3-2*t);
+      var out={sky:lerp3(a.s.sky,b.s.sky,t),deep:lerp3(a.s.deep,b.s.deep,t),hi:lerp3(a.s.hi,b.s.hi,t)};
+      SKEYS.forEach(function(k){out[k]=lerp(a.s[k]||0,b.s[k]||0,t);});
+      return out;
+    }
+  }
+  return sceneTrack[sceneTrack.length-1].s;
+}
+function rgb(c){return "rgb("+Math.round(c[0]*255)+","+Math.round(c[1]*255)+","+Math.round(c[2]*255)+")";}
+var startT=performance.now(),lastGrad="";
+function renderSky(){
+  if(!document.hidden){
+    var s=sampleScene(window.scrollY);
+    if(atmosphere){
+      var gl=atmosphere.gl,U=atmosphere.U;
+      gl.uniform2f(U.u_res,atmosphere.cv.width,atmosphere.cv.height);
+      gl.uniform1f(U.u_time,reduceMotion?40:(performance.now()-startT)/1000);
+      gl.uniform1f(U.u_scroll,reduceMotion?0:(window.scrollY/innerHeight));
+      gl.uniform3fv(U.u_sky,s.sky);gl.uniform3fv(U.u_deep,s.deep);gl.uniform3fv(U.u_hi,s.hi);
+      gl.uniform1f(U.u_sun,s.sun);gl.uniform1f(U.u_rays,s.rays);gl.uniform1f(U.u_dense,s.dense);
+      gl.uniform1f(U.u_wisp,s.wisp!=null?s.wisp:.5);gl.uniform1f(U.u_stars,s.stars||0);
+      gl.drawArrays(gl.TRIANGLES,0,3);
+    }else{
+      var g="linear-gradient(180deg,"+rgb(s.sky)+","+rgb(s.deep)+")";
+      if(g!==lastGrad){lastGrad=g;$("#skyFallback").style.background=g;}
+    }
+    if(typeof GATES!=="undefined"&&GATES)GATES.draw((performance.now()-startT)/1000);
+  }
+  requestAnimationFrame(renderSky);
+}
+buildSceneTrack();
+requestAnimationFrame(renderSky);
+window.addEventListener("resize",buildSceneTrack);
+if(hasGSAP)ScrollTrigger.addEventListener("refresh",buildSceneTrack);
+window.addEventListener("load",function(){if(hasGSAP)ScrollTrigger.refresh();});
+
+/* ---------- particles (snow / dust) ---------- */
+(function particles(){
+  var cv=$("#dust");var ctx=cv.getContext("2d");var W,H,parts=[];
+  function size(){W=cv.width=innerWidth;H=cv.height=innerHeight;}
+  size();window.addEventListener("resize",size);
+  var count=isLite?60:150;
+  /* z = depth (0 far … 1 near): near flakes are bigger, fall faster,
+     and swing more with the cursor - parallax inside the snowfall */
+  for(var i=0;i<count;i++){var z=Math.random();
+    parts.push({x:Math.random(),y:Math.random(),z:z,r:.5+z*2.6,
+      vx:(Math.random()-.5)*.00018,v:(.00007+Math.random()*.00022)*(.35+z),tw:Math.random()*6.28});}
+  function draw(){
+    if(!document.hidden){
+      var s=sampleScene(window.scrollY);
+      var snow=s.snow||0,dust=s.rays||0,vis=Math.max(snow,dust);
+      ctx.clearRect(0,0,W,H);
+      if(vis>.02&&!reduceMotion){
+        var t=performance.now()/1000,dir=snow>dust?1:-1;
+        for(var i=0;i<parts.length;i++){var p=parts[i];
+          p.x+=p.vx+(dir>0?Math.sin(t+p.tw)*.00008:0)+(pointer.x-.5)*.0006*(.3+p.z);p.y+=p.v*dir;
+          if(p.y>1.02){p.y=-.02;p.x=Math.random();}
+          if(p.y<-.02){p.y=1.02;p.x=Math.random();}
+          if(p.x<-.02)p.x=1.02;if(p.x>1.02)p.x=-.02;
+          var a=vis*(.18+.18*p.z+.28*Math.sin(t*1.5+p.tw));if(a<=0)continue;
+          ctx.fillStyle="rgba(240,246,240,"+a.toFixed(3)+")";
+          ctx.beginPath();ctx.arc(p.x*W,p.y*H,p.r,0,7);ctx.fill();
+        }
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+})();
+
+/* ---------- cloud gates: decks you descend through at each chapter boundary ----------
+   Anchored in document space; sweep past at >1x parallax with a gaussian
+   opacity envelope centred on the crossing, tinted to that altitude's palette. */
+var GATES=(function(){
+  var cv=$("#gates"); if(!cv) return null;
+  var ctx=cv.getContext("2d");
+  var W,H;
+  function size(){W=cv.width=innerWidth;H=cv.height=innerHeight;}
+  size();window.addEventListener("resize",function(){size();build();});
+  var SELS=["#ch-durbar","#ch-stupa","#ch-flight","#globeStage","#ch-toronto","#about"];
+  var gates=[];
+  function makeSprite(seed){
+    var rnd=mulberry(seed);
+    var c=document.createElement("canvas");c.width=1000;c.height=520;var x=c.getContext("2d");
+    for(var i=0;i<70;i++){
+      /* keep every blob fully inside the sprite so scaled edges never clip */
+      var r=45+rnd()*115, a=.05+rnd()*.07;
+      var cx=r+10+rnd()*(1000-2*(r+10)), cy=r+10+rnd()*(520-2*(r+10));
+      var g=x.createRadialGradient(cx,cy,0,cx,cy,r);
+      g.addColorStop(0,"rgba(255,255,255,"+a.toFixed(3)+")");g.addColorStop(1,"rgba(255,255,255,0)");
+      x.fillStyle=g;x.beginPath();x.arc(cx,cy,r,0,7);x.fill();
+    }
+    return c;
+  }
+  function tintSprite(sprite,col){
+    var c=document.createElement("canvas");c.width=sprite.width;c.height=sprite.height;
+    var x=c.getContext("2d");x.drawImage(sprite,0,0);
+    x.globalCompositeOperation="source-in";x.fillStyle=col;x.fillRect(0,0,c.width,c.height);
+    return c;
+  }
+  function build(){
+    gates=[];
+    var vh=innerHeight;
+    SELS.forEach(function(sel,bi){
+      var elx=$(sel); if(!elx) return;
+      var by=docTop(elx);
+      var s=sampleScene(by-vh*.5);
+      var col="rgb("+Math.round(lerp(s.sky[0],s.hi[0],.45)*255)+","
+                    +Math.round(lerp(s.sky[1],s.hi[1],.45)*255)+","
+                    +Math.round(lerp(s.sky[2],s.hi[2],.45)*255)+")";
+      var n=isLite?1:3, insts=[];
+      for(var i=0;i<n;i++){
+        insts.push({img:tintSprite(makeSprite(500+bi*31+i*7),col),
+          k:1.18+i*.16, xo:(i-1)*.22, yo:(i-.5)*.18,
+          ph:(bi*2.1+i*1.7)%6.28, spd:.12+i*.05, a:.5+i*.18});
+      }
+      gates.push({y:by,insts:insts});
+    });
+  }
+  function draw(t){
+    ctx.clearRect(0,0,W,H);
+    var sy=window.scrollY, vh=H;
+    for(var gi=0;gi<gates.length;gi++){
+      var g=gates[gi];
+      var c=g.y-sy-vh*.5;
+      var env=Math.exp(-Math.pow(c/(vh*.6),2));
+      if(env<.02)continue;
+      for(var i=0;i<g.insts.length;i++){
+        var it=g.insts[i];
+        var iw=W*(1.35+i*.4), ih=iw*.52;
+        var drift=reduceMotion?0:Math.sin(t*it.spd+it.ph)*W*.02;
+        var k=reduceMotion?1:it.k;
+        var ix=W*.5-iw*.5+it.xo*W+drift;
+        var iy=vh*.5+c*k-ih*.5+it.yo*vh;
+        ctx.globalAlpha=Math.min(.92,env*it.a*(reduceMotion?.8:1.6));
+        ctx.drawImage(it.img,ix,iy,iw,ih);
+      }
+    }
+    ctx.globalAlpha=1;
+  }
+  build();
+  return {build:build,draw:draw};
+})();
+if(hasGSAP)ScrollTrigger.addEventListener("refresh",function(){if(GATES)GATES.build();});
+
+/* ---------- preloader → hero ---------- */
+if(hasGSAP){
+  var heroLineEls=$$("#heroStack .hs-line");
+  gsap.set(heroLineEls,{autoAlpha:0,y:30,letterSpacing:".3em"});
+  gsap.set("#skipIntro",{autoAlpha:0});
+  gsap.set(".site-header",{autoAlpha:0,y:-16});
+  (function(){
+    var pl=$("#preloader");
+    if(lenis)lenis.stop();
+    document.body.style.overflow="hidden";
+    var tl=gsap.timeline({
+      onComplete:function(){
+        pl.remove();document.body.style.overflow="";
+        if(lenis)lenis.start();
+        buildSceneTrack();ScrollTrigger.refresh();
+        var h=location.hash;
+        if(h&&h!=="#journey"&&$(h))scrollToTarget(h,true);
+      }
+    });
+    tl.fromTo(".preloader .diamond",{rotate:-90,autoAlpha:0},{rotate:0,autoAlpha:1,duration:1,ease:"power3.out"},0)
+      .to("#plWord span",{opacity:1,duration:.7,stagger:.07,ease:"power2.out"},.35)
+      .to("#plSub",{opacity:1,duration:.6},"-=.3")
+      .to(pl,{autoAlpha:0,duration:reduceMotion?.2:1.1,ease:"power2.inOut"},"+=.4")
+      .to(heroLineEls,{autoAlpha:1,y:0,letterSpacing:".14em",duration:1.6,stagger:.12,ease:"power3.out"},"-=.7")
+      .to(".site-header",{autoAlpha:1,y:0,duration:1,ease:"power2.out"},"-=1.2")
+      .to("#skipIntro",{autoAlpha:1,duration:1},"-=.6");
+  })();
+  gsap.to(["#heroStack","#heroLine"],{autoAlpha:0,y:-80,ease:"none",
+    scrollTrigger:{trigger:"#hero",start:"top top",end:"70% top",scrub:true}});
+}
+$("#skipIntro").addEventListener("click",function(){scrollToTarget("#about");try{history.pushState(null,"","#about");}catch(e){}});
+
+/* ---------- header, side ui, journey dots, nav highlight ---------- */
+if(hasGSAP){
+  (function(){
+    var header=$("#siteHeader"),toTop=$("#toTop");
+    ScrollTrigger.create({start:0,end:"max",
+      onUpdate:function(self){
+        if(document.body.classList.contains("menu-open"))return;
+        header.classList.toggle("is-hidden",self.direction===1&&self.scroll()>400);
+        header.classList.toggle("is-solid",self.scroll()>60);
+        toTop.classList.toggle("is-on",self.scroll()>innerHeight);
+        gsap.set("#progressDash",{scaleX:.3+self.progress*.7});
+      }});
+    toTop.addEventListener("click",function(){scrollToTarget("#journey");try{history.pushState(null,"","#journey");}catch(e){}});
+    ScrollTrigger.create({trigger:"#journey",start:"top 60%",end:"bottom 40%",
+      onToggle:function(self){$("#journeyDots").classList.toggle("is-on",self.isActive);}});
+    var dots=$$("#journeyDots .jdot");
+    CONFIG.chapters.forEach(function(ch,i){
+      ScrollTrigger.create({trigger:ch.id,start:"top 55%",end:"bottom 45%",
+        onToggle:function(self){if(self.isActive)dots.forEach(function(d,k){d.classList.toggle("is-on",k===i);});}});
+    });
+    CONFIG.nav.forEach(function(n){
+      var sec=$(n.target);if(!sec)return;
+      ScrollTrigger.create({trigger:sec,start:"top 50%",end:"bottom 50%",
+        onToggle:function(self){
+          $$("#mainNav a").forEach(function(a){
+            if(a.getAttribute("data-scrollto")===n.target)a.classList.toggle("is-current",self.isActive);
+          });
+        }});
+    });
+    bindScrollLinks($("#journeyDots"));
+  })();
+}
+
+/* ---------- menu (focus-aware) ---------- */
+var menuOpen=false,menuTl=null,lastMenuFocus=null;
+(function(){
+  var overlay=$("#menuOverlay"),toggle=$("#menuToggle"),label=$("#menuToggleLabel");
+  if(hasGSAP){
+    gsap.set(".menu-link",{autoAlpha:0,y:26});gsap.set(".menu-foot",{autoAlpha:0});
+    menuTl=gsap.timeline({paused:true})
+      .set(overlay,{visibility:"visible"})
+      .to(overlay,{clipPath:"inset(0 0 0% 0)",duration:.8,ease:"power4.inOut"})
+      .to(".menu-link",{autoAlpha:1,y:0,duration:.8,stagger:.06,ease:"power3.out"},"-=.3")
+      .to(".menu-foot",{autoAlpha:1,duration:.5},"-=.4");
+  }
+  window.closeMenu=function(){
+    if(!menuOpen)return;menuOpen=false;
+    document.body.classList.remove("menu-open");
+    toggle.setAttribute("aria-expanded","false");
+    overlay.setAttribute("aria-hidden","true");
+    label.textContent="Menu";
+    if(menuTl)menuTl.timeScale(1.5).reverse();else overlay.style.visibility="hidden";
+    if(lenis)lenis.start();
+    if(lastMenuFocus)lastMenuFocus.focus();
+  };
+  toggle.addEventListener("click",function(){
+    if(menuOpen){closeMenu();return;}
+    menuOpen=true;lastMenuFocus=document.activeElement;
+    document.body.classList.add("menu-open");
+    toggle.setAttribute("aria-expanded","true");
+    overlay.setAttribute("aria-hidden","false");
+    label.textContent="Close";
+    if(menuTl)menuTl.timeScale(1).play();else{overlay.style.visibility="visible";overlay.style.clipPath="inset(0)";}
+    if(lenis)lenis.stop();
+    var first=overlay.querySelector("a");if(first)setTimeout(function(){first.focus();},400);
+  });
+  document.addEventListener("keydown",function(e){
+    if(e.key==="Escape"&&menuOpen)closeMenu();
+    if(e.key==="Tab"&&menuOpen){
+      var f=overlay.querySelectorAll("a");if(!f.length)return;
+      var first=f[0],last=f[f.length-1];
+      if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+      else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+    }
+  });
+})();
+
+/* ---------- accessible text reveals ---------- */
+if(hasGSAP){
+  $$("[data-chars]").forEach(function(h){
+    var text=h.textContent.trim();
+    h.setAttribute("aria-label",text);
+    var words=text.split(/\s+/);
+    h.innerHTML=words.map(function(w){
+      return "<span aria-hidden='true' style='display:inline-block;white-space:nowrap'>"+
+        w.split("").map(function(c){return "<span class='char'>"+c+"</span>";}).join("")+"</span>";
+    }).join(" ");
+    var chars=h.querySelectorAll(".char");
+    if(reduceMotion){gsap.set(chars,{opacity:1});return;}
+    gsap.set(chars,{opacity:0});
+    gsap.to(chars,{opacity:1,duration:.9,ease:"power1.inOut",
+      stagger:{each:.012,from:"start"},
+      scrollTrigger:{trigger:h,start:"top 80%"}});
+  });
+  $$("[data-fade]").forEach(function(elx){
+    if(reduceMotion){gsap.set(elx,{autoAlpha:1});return;}
+    gsap.fromTo(elx,{autoAlpha:0,y:26},{autoAlpha:1,y:0,duration:1.3,ease:"power2.out",
+      scrollTrigger:{trigger:elx,start:"top 88%"}});
+  });
+  $$("[data-parallax]").forEach(function(layer){
+    var sec=layer.closest("section");
+    if(!reduceMotion){
+      gsap.fromTo(layer,{yPercent:14},{yPercent:-6,ease:"none",
+        scrollTrigger:{trigger:sec,start:"top bottom",end:"bottom top",scrub:true}});
+    }
+    gsap.fromTo(layer,{autoAlpha:0},{autoAlpha:1,duration:1.4,ease:"power2.out",
+      scrollTrigger:{trigger:sec,start:"top 75%"}});
+  });
+  if(!reduceMotion){
+    gsap.to("#flagsL",{rotate:1.6,transformOrigin:"600px 70px",duration:3.4,yoyo:true,repeat:-1,ease:"sine.inOut"});
+    gsap.to("#flagsR",{rotate:-1.6,transformOrigin:"600px 70px",duration:3.1,yoyo:true,repeat:-1,ease:"sine.inOut"});
+  }
+}
+
+/* ---------- stupa: pinned zoom, the camera pulls back from the painted eyes ---------- */
+(function stupaZoom(){
+  var sec=$("#ch-stupa"); if(!sec) return;
+  var img=sec.querySelector(".scene-bg img");
+  if(!img||!hasGSAP||reduceMotion||isLite){ return; }
+  img.setAttribute("data-zoom","1");
+  gsap.set(img,{transformOrigin:"40% 62%",scale:2.15,yPercent:0});
+  var lead=sec.querySelector(".passage-lead");
+  var tl=gsap.timeline({scrollTrigger:{trigger:sec,start:"top top",end:"+=120%",pin:true,scrub:.4}});
+  tl.to(img,{scale:1,ease:"none",duration:1},0);
+  if(lead)tl.fromTo(lead,{autoAlpha:0,y:34},{autoAlpha:1,y:0,duration:.3,ease:"power1.out"},.66);
+})();
+
+/* ---------- the flight: pinned horizontal pan (vertical scroll becomes lateral travel) ---------- */
+(function flightPan(){
+  var stage=$("#ch-flight"),track=$("#panTrack");
+  if(!stage||!track) return;
+  if(!hasGSAP||reduceMotion||isLite||window.matchMedia("(max-width:767px)").matches) return;
+  var tween=gsap.to(track,{x:function(){return -(track.scrollWidth-innerWidth+innerWidth*.14);},ease:"none",
+    scrollTrigger:{trigger:stage,start:"top top",
+      end:function(){return "+="+(track.scrollWidth-innerWidth+innerWidth*.14);},
+      pin:true,scrub:.5,invalidateOnRefresh:true}});
+})();
+
+/* ---------- THREE.js globe (real earth, Kathmandu → Toronto) ---------- */
+(function globe(){
+  var stage=$("#globeStage"),cv=$("#globeCanvas"),overlay=$("#globeOverlay");
+  if(!window.THREE){ stage.style.background="radial-gradient(60% 60% at 50% 60%, #1c2a38, transparent)"; return; }
+  var W=stage.clientWidth,H=stage.clientHeight;
+  var renderer;
+  try{ renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true}); }
+  catch(e){ return; }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,isLite?1:1.5));
+  renderer.setSize(W,H);
+  var scene=new THREE.Scene();
+  var camera=new THREE.PerspectiveCamera(42,W/H,.1,10);
+  /* fit: the full sphere (r 1.03 incl. rim) always sits inside the frame
+     with ~12% margin, whatever the stage aspect ratio */
+  function fitCamera(){
+    var fovV=camera.fov*Math.PI/180;
+    var fovH=2*Math.atan(Math.tan(fovV/2)*camera.aspect);
+    var lim=Math.min(fovV,fovH);
+    camera.position.z=1.03*1.24/Math.sin(lim/2);
+  }
+  fitCamera();
+  /* cooled, dimmer light so the globe sits in the same steel-blue "space"
+     mood as the rest of the site (scenes.space) instead of reading as a
+     bright generic blue-marble floating in a mismatched void */
+  scene.add(new THREE.AmbientLight(0x6f84a8,.55));
+  var sunL=new THREE.DirectionalLight(0xcfe0ff,.85);sunL.position.set(-2,1.5,2);scene.add(sunL);
+  var tilt=new THREE.Group();tilt.rotation.x=.5;scene.add(tilt);
+  var globeG=new THREE.Group();tilt.add(globeG);
+  var geo=new THREE.SphereGeometry(1,isLite?48:64,isLite?48:64);
+  var mat=new THREE.MeshPhongMaterial({color:0x2a4460,shininess:6});
+  var earth=new THREE.Mesh(geo,mat);globeG.add(earth);
+  function proceduralTexture(){
+    var c=document.createElement("canvas");c.width=1024;c.height=512;var x=c.getContext("2d");
+    var bg=x.createLinearGradient(0,0,0,512);
+    bg.addColorStop(0,"#0d1b2c");bg.addColorStop(.5,"#132a43");bg.addColorStop(1,"#0a1622");
+    x.fillStyle=bg;x.fillRect(0,0,1024,512);
+    var rnd=mulberry(7);
+    for(var i=0;i<70;i++){
+      var bx=rnd()*1024,by=80+rnd()*352,r=20+rnd()*70;
+      var cg=x.createRadialGradient(bx,by,0,bx,by,r);
+      cg.addColorStop(0,"rgba(58,80,60,.55)");cg.addColorStop(1,"rgba(58,80,60,0)");
+      x.fillStyle=cg;x.beginPath();x.ellipse(bx,by,r,r*.62,rnd()*3,0,7);x.fill();
+    }
+    for(var j=0;j<420;j++){
+      var lx=rnd()*1024,ly=60+rnd()*392,a=.2+rnd()*.55;
+      x.fillStyle="rgba(255,214,150,"+a.toFixed(2)+")";
+      x.fillRect(lx,ly,1.1,1.1);
+    }
+    var t=new THREE.CanvasTexture(c);mat.map=t;mat.color.set(0xffffff);mat.needsUpdate=true;
+  }
+  (function loadTex(i){
+    if(i>=CONFIG.globe.textures.length){proceduralTexture();return;}
+    new THREE.TextureLoader().setCrossOrigin("anonymous").load(CONFIG.globe.textures[i],
+      function(t){mat.map=t;mat.color.set(0xffffff);mat.needsUpdate=true;},
+      undefined,function(){loadTex(i+1);});
+  })(0);
+  /* rim colour matches scenes.space's hi tone (rgb ~191,214,230) so the
+     glow reads as part of the same graded atmosphere, not a generic blue */
+  var rim=new THREE.Mesh(new THREE.SphereGeometry(1.03,48,48),
+    new THREE.MeshBasicMaterial({color:0xbfd6e6,transparent:true,opacity:.14,side:THREE.BackSide}));
+  globeG.add(rim);
+  function llToV(lat,lon,r){
+    var phi=(90-lat)*Math.PI/180,theta=(lon+180)*Math.PI/180;
+    return new THREE.Vector3(-r*Math.sin(phi)*Math.cos(theta),r*Math.cos(phi),r*Math.sin(phi)*Math.sin(theta));
+  }
+  function marker(pt,size){
+    var m=new THREE.Mesh(new THREE.SphereGeometry(size,12,12),
+      new THREE.MeshBasicMaterial({color:0xffffff}));
+    m.position.copy(llToV(pt.lat,pt.lon,1.005));globeG.add(m);return m;
+  }
+  var G=CONFIG.globe;
+  var mO=marker(G.origin,.018),mD=marker(G.dest,.018);
+  var mWays=G.waypoints.map(function(w){return marker(w,.008);});
+  var pA=llToV(G.origin.lat,G.origin.lon,1),pB=llToV(G.dest.lat,G.dest.lon,1);
+  var SEG=96,pts=[];
+  for(var i=0;i<=SEG;i++){var t=i/SEG;
+    var v0=new THREE.Vector3().copy(pA).lerp(pB,t).normalize()
+      .multiplyScalar(1+.22*Math.sin(Math.PI*t));
+    pts.push(v0);}
+  var arcGeo=new THREE.BufferGeometry().setFromPoints(pts);
+  var arc=new THREE.Line(arcGeo,new THREE.LineBasicMaterial({color:0xffe8b0,transparent:true,opacity:.95}));
+  arc.frustumCulled=false;globeG.add(arc);
+  arcGeo.setDrawRange(0,0);
+  function mkLabel(pt,cls){var s=el("span","geo-label "+cls);
+    s.innerHTML="<i></i>";s.appendChild(document.createTextNode(pt.label));overlay.appendChild(s);return s;}
+  var lO=mkLabel(G.origin,"endpoint"),lD=mkLabel(G.dest,"endpoint");
+  var lWays=G.waypoints.map(function(w){return mkLabel(w,"waypoint");});
+  function faceRot(p){return Math.atan2(-p.x,p.z);}
+  var rO=faceRot(pA),rD=faceRot(pB);
+  while(rD-rO>Math.PI)rD-=Math.PI*2;while(rO-rD>Math.PI)rD+=Math.PI*2;
+  globeG.rotation.y=rO;
+  var prog={t:0};
+  if(hasGSAP&&!reduceMotion){
+    var tl=gsap.timeline({scrollTrigger:{trigger:stage,start:"top top",end:"+=170%",pin:true,scrub:.5}});
+    tl.fromTo(lO,{autoAlpha:0},{autoAlpha:1,duration:.4},0)
+      .to(prog,{t:1,duration:2.6,ease:"power1.inOut",
+        onUpdate:function(){
+          globeG.rotation.y=rO+(rD-rO)*prog.t;
+          arcGeo.setDrawRange(0,Math.floor(prog.t*(SEG+1)));
+        }},.3);
+    lWays.forEach(function(w,i){tl.to(w,{autoAlpha:.85,duration:.3},1+i*.5);});
+    tl.to(lD,{autoAlpha:1,duration:.4},2.5)
+      .to("#globeCaption",{autoAlpha:1,duration:.5},2.7);
+  }else{
+    globeG.rotation.y=rO+(rD-rO)*.5;arcGeo.setDrawRange(0,SEG+1);
+    [lO,lD].concat(lWays).forEach(function(l){l.style.opacity=1;});
+    $("#globeCaption").style.opacity=1;
+  }
+  var v=new THREE.Vector3(),running=false;
+  function project(mesh,labelEl){
+    mesh.getWorldPosition(v);
+    var behind=v.z<0.12;
+    v.project(camera);
+    labelEl.style.left=((v.x*.5+.5)*100)+"%";
+    labelEl.style.top=((-v.y*.5+.5)*100)+"%";
+    labelEl.style.visibility=behind?"hidden":"visible";
+  }
+  function size(){W=stage.clientWidth;H=stage.clientHeight;
+    renderer.setSize(W,H);camera.aspect=W/H;camera.updateProjectionMatrix();fitCamera();}
+  window.addEventListener("resize",size);
+  function loop(){
+    if(running&&!document.hidden){
+      if(!reduceMotion)rim.rotation.y+=.0004;
+      renderer.render(scene,camera);
+      project(mO,lO);project(mD,lD);
+      mWays.forEach(function(m,i){project(m,lWays[i]);});
+    }
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+  if(hasGSAP){
+    ScrollTrigger.create({trigger:stage,start:"top bottom",end:"bottom top",
+      onToggle:function(self){running=self.isActive;}});
+  }else{running=true;}
+})();
+
+/* ---------- photography: masonry, lazy load, filters, lightbox ---------- */
+(function gallery(){
+  var grid=$("#masonry"),tabsWrap=$("#filterTabs"),loadBtn=$("#loadMore");
+  var activeTag="All",shown=0,filtered=[];
+  var tags=["All"];CONFIG.photos.forEach(function(p){(p.tags||[]).forEach(function(t){if(tags.indexOf(t)<0)tags.push(t);});});
+  var io=("IntersectionObserver" in window)?new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(en.isIntersecting){loadImg(en.target);io.unobserve(en.target);}
+    });
+  },{rootMargin:"300px"}):null;
+  function loadImg(img){
+    img.src=img.getAttribute("data-src");
+    var ss=img.getAttribute("data-srcset");if(ss)img.srcset=ss;
+    img.onload=function(){img.classList.add("is-loaded");};
+    img.onerror=function(){
+      img.onerror=null;
+      img.src=genPlaceholder(600,Math.round(600*(parseFloat(img.getAttribute("data-ratio"))||1)),"#3d5163","#22303c");
+      img.classList.add("is-loaded");
+    };
+  }
+  function srcsetFor(src){
+    if(src.indexOf("images.unsplash.com")<0)return "";
+    return src.replace(/([?&])w=\d+/,"$1w=480")+" 480w, "+
+           src.replace(/([?&])w=\d+/,"$1w=900")+" 900w, "+
+           src.replace(/([?&])w=\d+/,"$1w=1400")+" 1400w";
+  }
+  function render(reset){
+    if(reset){grid.innerHTML="";shown=0;
+      filtered=CONFIG.photos.filter(function(p){return activeTag==="All"||(p.tags||[]).indexOf(activeTag)>=0;});}
+    var slice=filtered.slice(shown,shown+CONFIG.photoPageSize);
+    slice.forEach(function(p){
+      var idx=filtered.indexOf(p);
+      var item=el("button","ph-item");
+      item.setAttribute("aria-label","Open photo: "+p.caption+", "+p.location);
+      var ratio=(p.h/p.w)*100;
+      item.innerHTML="<span class='ph-box' style='padding-top:"+ratio.toFixed(1)+"%'></span>"+
+        "<span class='ph-cap'><span class='t'></span><span class='l'></span></span>";
+      item.querySelector(".t").textContent=p.caption;
+      item.querySelector(".l").textContent=p.location;
+      var img=el("img");img.alt=p.alt;img.setAttribute("data-src",p.src);
+      img.setAttribute("data-ratio",(p.h/p.w).toFixed(3));
+      var ss=srcsetFor(p.src);if(ss){img.setAttribute("data-srcset",ss);img.sizes="(max-width:560px) 92vw, (max-width:1000px) 46vw, 30vw";}
+      item.querySelector(".ph-box").appendChild(img);
+      item.addEventListener("click",function(){openLightbox(idx);});
+      grid.appendChild(item);
+      if(io)io.observe(img);else loadImg(img);
+      if(hasGSAP&&!reduceMotion){
+        gsap.fromTo(item,{autoAlpha:0,y:30},{autoAlpha:1,y:0,duration:.9,ease:"power2.out",
+          scrollTrigger:{trigger:item,start:"top 95%"}});
+      }
+    });
+    shown+=slice.length;
+    loadBtn.style.display=shown<filtered.length?"inline-flex":"none";
+    if(hasGSAP)ScrollTrigger.refresh();
+  }
+  tags.forEach(function(t,i){
+    var b=el("button","filter-tab"+(i===0?" is-on":""));
+    b.textContent=t;b.setAttribute("role","tab");
+    b.addEventListener("click",function(){
+      if(activeTag===t)return;activeTag=t;
+      $$(".filter-tab").forEach(function(x){x.classList.toggle("is-on",x===b);});
+      if(hasGSAP&&!reduceMotion){
+        gsap.to(grid,{autoAlpha:0,y:14,duration:.3,ease:"power1.in",onComplete:function(){
+          render(true);gsap.fromTo(grid,{autoAlpha:0,y:14},{autoAlpha:1,y:0,duration:.5,ease:"power2.out"});
+        }});
+      }else render(true);
+    });
+    tabsWrap.appendChild(b);
+  });
+  loadBtn.addEventListener("click",function(){render(false);});
+  render(true);
+
+  var lb=$("#lightbox"),lbImg=$("#lbImg"),cur=0,lastFocus=null,touchX=null;
+  function show(i,dirn){
+    cur=(i+filtered.length)%filtered.length;
+    var p=filtered[cur];
+    var swap=function(){
+      lbImg.src=p.src.replace(/([?&])w=\d+/,"$1w=1400");lbImg.alt=p.alt;
+      lbImg.onerror=function(){lbImg.onerror=null;lbImg.src=genPlaceholder(900,600);};
+      $("#lbTitle").textContent=p.caption;
+      $("#lbLoc").textContent=p.location+", "+p.date;
+      $("#lbCount").textContent=(cur+1)+" / "+filtered.length;
+    };
+    if(hasGSAP&&!reduceMotion){
+      gsap.to(lbImg,{autoAlpha:0,x:dirn?dirn*-30:0,duration:.22,onComplete:function(){
+        swap();gsap.fromTo(lbImg,{autoAlpha:0,x:dirn?dirn*30:0},{autoAlpha:1,x:0,duration:.35,ease:"power2.out"});
+      }});
+    }else swap();
+  }
+  function openLightbox(i){
+    lastFocus=document.activeElement;
+    lb.classList.add("is-open");
+    document.body.style.overflow="hidden";if(lenis)lenis.stop();
+    show(i,0);$("#lbClose").focus();
+  }
+  function closeLightbox(){
+    lb.classList.remove("is-open");
+    document.body.style.overflow="";if(lenis)lenis.start();
+    if(lastFocus)lastFocus.focus();
+  }
+  window.openLightbox=openLightbox;
+  $("#lbClose").addEventListener("click",closeLightbox);
+  $("#lbPrev").addEventListener("click",function(){show(cur-1,-1);});
+  $("#lbNext").addEventListener("click",function(){show(cur+1,1);});
+  lb.addEventListener("click",function(e){if(e.target===lb)closeLightbox();});
+  document.addEventListener("keydown",function(e){
+    if(!lb.classList.contains("is-open"))return;
+    if(e.key==="Escape")closeLightbox();
+    if(e.key==="ArrowLeft")show(cur-1,-1);
+    if(e.key==="ArrowRight")show(cur+1,1);
+    if(e.key==="Tab"){
+      var f=[$("#lbClose"),$("#lbPrev"),$("#lbNext")];
+      var iF=f.indexOf(document.activeElement);
+      e.preventDefault();
+      var nxt=iF<0?0:(iF+(e.shiftKey?-1:1)+f.length)%f.length;
+      f[nxt].focus();
+    }
+  });
+  lb.addEventListener("touchstart",function(e){touchX=e.touches[0].clientX;},{passive:true});
+  lb.addEventListener("touchend",function(e){
+    if(touchX==null)return;
+    var dx=e.changedTouches[0].clientX-touchX;
+    if(Math.abs(dx)>50)show(cur+(dx<0?1:-1),dx<0?1:-1);
+    touchX=null;
+  },{passive:true});
+})();
+
+window.addEventListener("load",function(){if(hasGSAP)ScrollTrigger.refresh();});
+})();
+</script>
+</body>
+</html>
